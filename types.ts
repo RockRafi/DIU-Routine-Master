@@ -17,7 +17,7 @@ export interface Course {
 export interface Room {
   id: string;
   roomNumber: string;
-  capacity: number;
+  // capacity removed as requested
   type: 'Lab' | 'Theory';
 }
 
@@ -25,6 +25,7 @@ export interface Section {
   id: string;
   name: string; // e.g., "A", "B", or "" for whole batch
   batch: number;
+  studentCount: number; // Added
 }
 
 export enum DayOfWeek {
@@ -44,8 +45,8 @@ export interface ClassSession {
   roomId: string;
   sectionId: string;
   day: DayOfWeek;
-  startTime: string; // "08:30"
-  endTime: string;   // "10:00"
+  startTime: string; // "08:30 AM"
+  endTime: string;   // "10:00 AM"
 }
 
 export interface AppSettings {
@@ -64,24 +65,27 @@ export interface AppData {
 }
 
 export const TIME_SLOTS = [
-  "08:30 - 10:00",
-  "10:00 - 11:30",
-  "11:30 - 13:00",
-  "13:00 - 14:30",
-  "14:30 - 16:00"
+  "08:30 AM - 10:00 AM",
+  "10:00 AM - 11:30 AM",
+  "11:30 AM - 01:00 PM",
+  "01:00 PM - 02:30 PM",
+  "02:30 PM - 04:00 PM",
+  "04:00 PM - 05:30 PM"
 ];
 
-// Helper for pastel colors based on batch number
+// Enhanced pastel colors for batches
 export const getBatchColor = (batch: number) => {
   const colors = [
-    'bg-blue-100 text-blue-800 border-blue-200',
-    'bg-green-100 text-green-800 border-green-200',
-    'bg-purple-100 text-purple-800 border-purple-200',
-    'bg-orange-100 text-orange-800 border-orange-200',
-    'bg-pink-100 text-pink-800 border-pink-200',
-    'bg-teal-100 text-teal-800 border-teal-200',
-    'bg-indigo-100 text-indigo-800 border-indigo-200',
-    'bg-cyan-100 text-cyan-800 border-cyan-200',
+    'bg-blue-100 text-blue-900 border-blue-200',
+    'bg-emerald-100 text-emerald-900 border-emerald-200',
+    'bg-violet-100 text-violet-900 border-violet-200',
+    'bg-amber-100 text-amber-900 border-amber-200',
+    'bg-rose-100 text-rose-900 border-rose-200',
+    'bg-cyan-100 text-cyan-900 border-cyan-200',
+    'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-200',
+    'bg-lime-100 text-lime-900 border-lime-200',
+    'bg-indigo-100 text-indigo-900 border-indigo-200',
+    'bg-orange-100 text-orange-900 border-orange-200',
   ];
   return colors[batch % colors.length];
 };

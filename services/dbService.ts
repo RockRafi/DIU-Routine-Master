@@ -3,13 +3,13 @@ import { AppData, ClassSession, DayOfWeek, Teacher, Course, Room, Section } from
 // Initial Mock Data
 const INITIAL_DATA: AppData = {
   settings: {
-    semesterName: 'Fall 2025',
+    semesterName: 'Spring 2026',
     isPublished: true,
   },
   teachers: [
-    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd', offDay: 'Friday', counselingHour: 'Sun 10:00-11:30' },
-    { id: 't2', name: 'Ms. Jane Smith', initial: 'JS', email: 'jane@diu.edu.bd' },
-    { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd' },
+    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd', offDay: 'Friday', counselingHour: 'Sunday 10:00 AM - 11:30 AM' },
+    { id: 't2', name: 'Ms. Jane Smith', initial: 'JS', email: 'jane@diu.edu.bd', offDay: 'Saturday', counselingHour: 'Monday 11:30 AM - 01:00 PM' },
+    { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd', offDay: 'Thursday', counselingHour: 'None' },
   ],
   courses: [
     { id: 'c1', code: 'CSE101', name: 'Structured Programming', credits: 3 },
@@ -19,15 +19,15 @@ const INITIAL_DATA: AppData = {
     { id: 'c5', code: 'CSE202', name: 'OOP', credits: 3 },
   ],
   rooms: [
-    { id: 'r1', roomNumber: 'AB4-601', capacity: 40, type: 'Theory' },
-    { id: 'r2', roomNumber: 'AB4-602', capacity: 40, type: 'Theory' },
-    { id: 'r3', roomNumber: 'AB4-Lab1', capacity: 30, type: 'Lab' },
-    { id: 'r4', roomNumber: 'AB4-Lab2', capacity: 30, type: 'Lab' },
+    { id: 'r1', roomNumber: 'AB4-601', type: 'Theory' },
+    { id: 'r2', roomNumber: 'AB4-602', type: 'Theory' },
+    { id: 'r3', roomNumber: 'AB4-Lab1', type: 'Lab' },
+    { id: 'r4', roomNumber: 'AB4-Lab2', type: 'Lab' },
   ],
   sections: [
-    { id: 's1', name: 'A', batch: 56 },
-    { id: 's2', name: 'B', batch: 56 },
-    { id: 's3', name: '', batch: 57 }, // Example of batch with no specific section
+    { id: 's1', name: 'A', batch: 56, studentCount: 45 },
+    { id: 's2', name: 'B', batch: 56, studentCount: 42 },
+    { id: 's3', name: '', batch: 57, studentCount: 50 }, 
   ],
   schedule: []
 };
@@ -42,6 +42,11 @@ export const getInitialData = (): AppData => {
     if (!parsed.settings) {
       parsed.settings = INITIAL_DATA.settings;
     }
+    // Migration: ensure sections have studentCount if missing
+    parsed.sections = parsed.sections.map((s: any) => ({
+        ...s,
+        studentCount: s.studentCount || 0
+    }));
     return parsed;
   }
   return INITIAL_DATA;

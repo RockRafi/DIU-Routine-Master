@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, Room, Teacher, Course, Section } from '../types';
 import ScheduleGrid from './ScheduleGrid';
 import ClassModal from './ClassModal';
-import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download } from 'lucide-react';
 
 // --- Sub-Components Defined Outside ---
 
@@ -119,16 +119,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   const [modalInitialDay, setModalInitialDay] = useState<DayOfWeek>(DayOfWeek.Sunday);
   const [modalInitialTime, setModalInitialTime] = useState<string>(TIME_SLOTS[0]);
 
-  // Form States (Defined in parent to keep them alive if tabs switch, though mostly local to tab now)
+  // Form States
   const [newRoomNumber, setNewRoomNumber] = useState('');
-  const [newRoomCapacity, setNewRoomCapacity] = useState('');
   const [newRoomType, setNewRoomType] = useState<'Theory' | 'Lab'>('Theory');
 
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherInitial, setNewTeacherInitial] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [newTeacherOffDay, setNewTeacherOffDay] = useState('');
-  const [newTeacherCounseling, setNewTeacherCounseling] = useState('');
+  // Counseling form state
+  const [newTeacherCounselingDay, setNewTeacherCounselingDay] = useState('');
+  const [newTeacherCounselingTime, setNewTeacherCounselingTime] = useState('');
+  const [newTeacherCounselingNone, setNewTeacherCounselingNone] = useState(false);
 
   const [newCourseCode, setNewCourseCode] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
@@ -136,6 +138,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionBatch, setNewSectionBatch] = useState('');
+  const [newSectionStudents, setNewSectionStudents] = useState('');
 
   // Settings State
   const [semesterName, setSemesterName] = useState(data.settings.semesterName);
@@ -183,8 +186,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const handleAddRoom = () => {
     setErrorMsg(null);
-    if (!newRoomNumber || !newRoomCapacity) {
-      setErrorMsg("Please provide both Room Number and Capacity.");
+    if (!newRoomNumber) {
+      setErrorMsg("Room Number is required.");
       return;
     }
     if (data.rooms.some(r => r.roomNumber.toLowerCase() === newRoomNumber.trim().toLowerCase())) {
@@ -194,39 +197,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
     const newRoom: Room = {
       id: crypto.randomUUID(),
       roomNumber: newRoomNumber.trim(),
-      capacity: parseInt(newRoomCapacity),
       type: newRoomType
     };
     onUpdateData({ ...data, rooms: [...data.rooms, newRoom] });
     setNewRoomNumber('');
-    setNewRoomCapacity('');
     setNewRoomType('Theory');
   };
 
   const handleAddTeacher = () => {
     setErrorMsg(null);
     if (!newTeacherName || !newTeacherInitial || !newTeacherEmail) {
-      setErrorMsg("All teacher fields are required.");
+      setErrorMsg("All teacher fields (Name, Initial, Email) are required.");
       return;
     }
     if (data.teachers.some(t => t.initial.toLowerCase() === newTeacherInitial.trim().toLowerCase())) {
       setErrorMsg("A teacher with this initial already exists.");
       return;
     }
+
+    let counselingString = 'None';
+    if (!newTeacherCounselingNone) {
+        if (!newTeacherCounselingDay || !newTeacherCounselingTime) {
+             setErrorMsg("Please select Counseling Day and Time, or check 'None'.");
+             return;
+        }
+        counselingString = `${newTeacherCounselingDay} ${newTeacherCounselingTime}`;
+    }
+
     const newTeacher: Teacher = {
       id: crypto.randomUUID(),
       name: newTeacherName.trim(),
       initial: newTeacherInitial.trim().toUpperCase(),
       email: newTeacherEmail.trim(),
       offDay: newTeacherOffDay,
-      counselingHour: newTeacherCounseling
+      counselingHour: counselingString
     };
     onUpdateData({ ...data, teachers: [...data.teachers, newTeacher] });
     setNewTeacherName('');
     setNewTeacherInitial('');
     setNewTeacherEmail('');
     setNewTeacherOffDay('');
-    setNewTeacherCounseling('');
+    setNewTeacherCounselingDay('');
+    setNewTeacherCounselingTime('');
+    setNewTeacherCounselingNone(false);
   };
 
   const handleAddCourse = () => {
@@ -253,8 +266,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const handleAddSection = () => {
     setErrorMsg(null);
-    if (!newSectionBatch) {
-      setErrorMsg("Batch number is required.");
+    if (!newSectionBatch || !newSectionStudents) {
+      setErrorMsg("Batch number and Student count are required.");
       return;
     }
     // Check for duplicate
@@ -264,12 +277,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
     }
     const newSection: Section = {
       id: crypto.randomUUID(),
-      name: newSectionName.trim(), // Can be empty
-      batch: parseInt(newSectionBatch)
+      name: newSectionName.trim(),
+      batch: parseInt(newSectionBatch),
+      studentCount: parseInt(newSectionStudents)
     };
     onUpdateData({ ...data, sections: [...data.sections, newSection] });
     setNewSectionName('');
     setNewSectionBatch('');
+    setNewSectionStudents('');
   };
 
 
@@ -277,17 +292,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const renderScheduler = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex justify-between items-center bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 gap-4">
             <div>
                 <h3 className="text-xl font-bold text-gray-800">Master Schedule</h3>
                 <p className="text-gray-500 text-sm">Click on any cell to assign a class.</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
                {!data.settings.isPublished && (
                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold border border-yellow-200">
                        DRAFT MODE
                    </span>
                )}
+               <button 
+                onClick={() => window.print()} 
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors"
+               >
+                 <Printer className="w-4 h-4" /> Print Master
+               </button>
                <button 
                 onClick={() => handleOpenModal()} 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200"
@@ -296,11 +317,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
                </button>
             </div>
         </div>
-        <ScheduleGrid 
-            data={data} 
-            onSlotClick={handleOpenModal} 
-            onDeleteSession={handleDeleteSession} 
-        />
+        <div className="print:block">
+            <ScheduleGrid 
+                data={data} 
+                onSlotClick={handleOpenModal} 
+                onDeleteSession={handleDeleteSession} 
+            />
+        </div>
     </div>
   );
 
@@ -365,9 +388,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             </div>
         </div>
         {errorMsg && <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-2xl text-sm">{errorMsg}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
           <InputField label="Room Number" value={newRoomNumber} onChange={(e: any) => setNewRoomNumber(e.target.value)} placeholder="e.g. AB4-601" />
-          <InputField label="Capacity" value={newRoomCapacity} onChange={(e: any) => setNewRoomCapacity(e.target.value)} type="number" placeholder="40" />
            <SelectField label="Type" value={newRoomType} onChange={(e: any) => setNewRoomType(e.target.value as any)} options={<><option value="Theory">Theory</option><option value="Lab">Lab</option></>} />
         </div>
         <div className="mt-8 flex justify-end">
@@ -378,7 +400,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
       </div>
       <DataTable 
         items={data.rooms} 
-        fields={[{key:'roomNumber', label:'Room Number'}, {key:'capacity', label:'Capacity'}, {key:'type', label:'Type'}]} 
+        fields={[{key:'roomNumber', label:'Room Number'}, {key:'type', label:'Type'}]} 
         onDelete={(id: string) => onUpdateData({...data, rooms: data.rooms.filter(r => r.id !== id)})} 
       />
     </div>
@@ -400,8 +422,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
           <InputField label="Full Name" value={newTeacherName} onChange={(e: any) => setNewTeacherName(e.target.value)} placeholder="e.g. John Doe" />
           <InputField label="Initial" value={newTeacherInitial} onChange={(e: any) => setNewTeacherInitial(e.target.value)} placeholder="JD" />
           <InputField label="Email" value={newTeacherEmail} onChange={(e: any) => setNewTeacherEmail(e.target.value)} type="email" placeholder="john@diu.edu.bd" />
+          
           <SelectField label="Off Day" value={newTeacherOffDay} onChange={(e: any) => setNewTeacherOffDay(e.target.value)} options={Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)} />
-          <InputField label="Counseling Hour" value={newTeacherCounseling} onChange={(e: any) => setNewTeacherCounseling(e.target.value)} placeholder="Sun 10:00-11:30" />
+          
+          {/* Counseling Hour Split Input */}
+          <div className="md:col-span-2 space-y-2">
+             <label className="text-sm font-medium text-gray-600 block">Counseling Hour</label>
+             <div className="flex items-center gap-3">
+                 <div className="flex-1">
+                     <SelectField 
+                        label="Day" 
+                        value={newTeacherCounselingDay} 
+                        onChange={(e: any) => { setNewTeacherCounselingDay(e.target.value); setNewTeacherCounselingNone(false); }} 
+                        options={Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)} 
+                     />
+                 </div>
+                 <div className="flex-1">
+                     <SelectField 
+                        label="Time" 
+                        value={newTeacherCounselingTime} 
+                        onChange={(e: any) => { setNewTeacherCounselingTime(e.target.value); setNewTeacherCounselingNone(false); }} 
+                        options={TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)} 
+                     />
+                 </div>
+                 <div className="flex items-center gap-2 px-2">
+                     <input 
+                       type="checkbox" 
+                       id="cNone"
+                       checked={newTeacherCounselingNone} 
+                       onChange={(e) => { 
+                           setNewTeacherCounselingNone(e.target.checked); 
+                           if(e.target.checked) {
+                               setNewTeacherCounselingDay('');
+                               setNewTeacherCounselingTime('');
+                           }
+                       }}
+                       className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500"
+                     />
+                     <label htmlFor="cNone" className="text-sm text-gray-600">None</label>
+                 </div>
+             </div>
+          </div>
+
         </div>
         <div className="mt-8 flex justify-end">
           <button onClick={handleAddTeacher} className="bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-full shadow-lg shadow-gray-200 flex items-center gap-2 font-medium">
@@ -461,9 +523,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             </div>
         </div>
         {errorMsg && <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-2xl text-sm">{errorMsg}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
           <InputField label="Batch Number" value={newSectionBatch} onChange={(e: any) => setNewSectionBatch(e.target.value)} type="number" placeholder="56" />
           <InputField label="Section Name (Optional)" value={newSectionName} onChange={(e: any) => setNewSectionName(e.target.value)} placeholder="A" />
+          <InputField label="Total Students" value={newSectionStudents} onChange={(e: any) => setNewSectionStudents(e.target.value)} type="number" placeholder="40" />
         </div>
         <div className="mt-8 flex justify-end">
           <button onClick={handleAddSection} className="bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-full shadow-lg shadow-gray-200 flex items-center gap-2 font-medium">
@@ -473,7 +536,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
       </div>
       <DataTable 
         items={data.sections} 
-        fields={[{key:'batch', label:'Batch'}, {key:'name', label:'Name'}]} 
+        fields={[{key:'batch', label:'Batch'}, {key:'name', label:'Name'}, {key:'studentCount', label:'Students'}]} 
         onDelete={(id: string) => onUpdateData({...data, sections: data.sections.filter(x => x.id !== id)})} 
       />
     </div>

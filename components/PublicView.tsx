@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppData, getBatchColor } from '../types';
 import ScheduleTable from './ScheduleTable';
-import { Search, User, Users, Calendar, ShieldCheck, ChevronDown, Download, AlertTriangle } from 'lucide-react';
+import { Search, User, Users, Calendar, ShieldCheck, ChevronDown, Download, AlertTriangle, Layers } from 'lucide-react';
 
 interface PublicViewProps {
   data: AppData;
@@ -25,6 +25,26 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
       return acc;
   }, {} as Record<number, typeof data.sections>);
 
+  // Determine filter type based on selection
+  let filterType: 'section' | 'batch' | 'teacher' = 'section';
+  let filterValue = selectedId;
+  let displayTitle = '';
+
+  if (viewMode === 'teacher') {
+      filterType = 'teacher';
+      displayTitle = data.teachers.find(t => t.id === selectedId)?.name || '';
+  } else {
+      if (selectedId.startsWith('batch-')) {
+          filterType = 'batch';
+          filterValue = selectedId.replace('batch-', '');
+          displayTitle = `Batch ${filterValue} (All Sections)`;
+      } else {
+          filterType = 'section';
+          const s = data.sections.find(s => s.id === selectedId);
+          if (s) displayTitle = `Batch ${s.batch} - ${s.name ? `Section ${s.name}` : 'Entire Batch'}`;
+      }
+  }
+
   return (
     <div className="min-h-screen bg-[#FDFDF6] text-gray-900 font-sans selection:bg-blue-100">
       {/* M3 Top App Bar */}
@@ -36,13 +56,23 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
              </div>
              <span className="text-xl font-medium text-gray-800 tracking-tight">DIU Routine Master</span>
           </div>
-          <button 
-            onClick={onAdminClick}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">Admin</span>
-          </button>
+          <div className="flex items-center gap-3">
+              <button 
+                onClick={() => { setSelectedId(''); setTimeout(() => window.print(), 100); }}
+                className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
+                title="Print Full Semester Routine"
+              >
+                <Download className="w-4 h-4" />
+                <span>Full Schedule</span>
+              </button>
+              <button 
+                onClick={onAdminClick}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span className="hidden sm:inline">Admin</span>
+              </button>
+          </div>
         </div>
       </header>
 
@@ -108,9 +138,12 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                 // Group sections by Batch in dropdown
                 Object.entries(sectionsByBatch).map(([batch, sections]) => (
                    <optgroup key={batch} label={`Batch ${batch}`}>
+                       <option value={`batch-${batch}`} className="font-semibold text-blue-600">
+                           All Sections (Batch {batch})
+                       </option>
                        {sections.map(s => (
                            <option key={s.id} value={s.id}>
-                               {s.name ? `Section ${s.name}` : `Batch ${s.batch} (Entire)`}
+                               {s.name ? `Section ${s.name}` : `Batch ${s.batch} (Only)`}
                            </option>
                        ))}
                    </optgroup>
@@ -134,23 +167,18 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
               <div>
                 <h2 className="text-3xl font-medium text-gray-900 tracking-tight flex items-center gap-3">
-                  {viewMode === 'student' ? (
-                     <>
-                        {(() => {
+                  {viewMode === 'student' && filterType === 'section' && (
+                       (() => {
                             const s = data.sections.find(s => s.id === selectedId);
                             if (!s) return null;
                             const colorClass = getBatchColor(s.batch);
-                            return (
-                                <>
-                                    <span className={`text-base px-3 py-1 rounded-full border ${colorClass} opacity-80`}>Batch {s.batch}</span>
-                                    <span>{s.name ? `Section ${s.name}` : 'Schedule'}</span>
-                                </>
-                            );
-                        })()}
-                     </>
-                  ) : (
-                    data.teachers.find(t => t.id === selectedId)?.name
+                            return <span className={`text-base px-3 py-1 rounded-full border ${colorClass} opacity-80`}>Batch {s.batch}</span>;
+                       })()
                   )}
+                  {viewMode === 'student' && filterType === 'batch' && (
+                        <span className={`text-base px-3 py-1 rounded-full border bg-gray-100 text-gray-800 border-gray-200`}>Batch {filterValue}</span>
+                  )}
+                  <span>{displayTitle}</span>
                 </h2>
                 <p className="text-gray-500 mt-2 flex items-center gap-2">
                   <Calendar className="w-4 h-4" /> {data.settings.semesterName} Weekly Routine
@@ -161,7 +189,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                   onClick={handleExportPDF}
                   className="hidden md:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all no-print"
                  >
-                   <Download className="w-4 h-4" /> Export Routine PDF
+                   <Download className="w-4 h-4" /> Export This View
                  </button>
                  <div className="text-right hidden md:block">
                     <div className="text-sm text-gray-400">Semester</div>
@@ -172,8 +200,8 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
             
             <ScheduleTable 
               data={data} 
-              filterType={viewMode === 'student' ? 'section' : 'teacher'} 
-              filterId={selectedId} 
+              filterType={filterType} 
+              filterId={filterValue} 
             />
             
             {/* Teacher Details Footer */}
@@ -203,6 +231,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-700 no-print">
+            {/* If no ID selected, show Master Schedule ONLY if Print was clicked (handled by CSS, but good to have fallback in view) */}
             <div className="w-40 h-40 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
               <Search className="w-16 h-16 text-gray-300" />
             </div>
@@ -212,6 +241,13 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
             </p>
           </div>
         )}
+
+        {/* Hidden Master Table for Print-All */}
+        <div className="hidden print:block mt-8">
+            <h2 className="text-2xl font-bold text-center mb-4">Complete Master Schedule - {data.settings.semesterName}</h2>
+            <ScheduleTable data={data} filterType="all" />
+        </div>
+
       </main>
       )}
 

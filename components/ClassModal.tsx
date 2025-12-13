@@ -186,7 +186,7 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
               >
                 <option value="" disabled>Select Room</option>
                 {data.rooms.map(r => (
-                  <option key={r.id} value={r.id}>{r.roomNumber} (Cap: {r.capacity}) - {r.type}</option>
+                  <option key={r.id} value={r.id}>{r.roomNumber} ({r.type})</option>
                 ))}
               </select>
             </div>
