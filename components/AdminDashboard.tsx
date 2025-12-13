@@ -76,7 +76,11 @@ const DataTable = ({ items, fields, onDelete, emptyMessage = "No records found."
               <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                 {fields.map((f: any) => (
                   <td key={f.key} className="px-8 py-5 whitespace-nowrap text-sm text-gray-700">
-                    {item[f.key] || <span className="text-gray-300">-</span>}
+                    {/* Handle arrays (like offDays) gracefully */}
+                    {Array.isArray(item[f.key]) 
+                        ? (item[f.key].length > 0 ? item[f.key].join(', ') : <span className="text-gray-300">-</span>)
+                        : (item[f.key] || <span className="text-gray-300">-</span>)
+                    }
                   </td>
                 ))}
                 <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
@@ -126,7 +130,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherInitial, setNewTeacherInitial] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
-  const [newTeacherOffDay, setNewTeacherOffDay] = useState('');
+  // Teacher Off Day State (Array)
+  const [newTeacherOffDays, setNewTeacherOffDays] = useState<string[]>([]);
+  
   // Counseling form state
   const [newTeacherCounselingDay, setNewTeacherCounselingDay] = useState('');
   const [newTeacherCounselingTime, setNewTeacherCounselingTime] = useState('');
@@ -184,6 +190,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
       });
   };
 
+  const toggleOffDay = (day: string) => {
+      setNewTeacherOffDays(prev => 
+          prev.includes(day) 
+            ? prev.filter(d => d !== day) 
+            : [...prev, day]
+      );
+  };
+
   const handleAddRoom = () => {
     setErrorMsg(null);
     if (!newRoomNumber) {
@@ -229,14 +243,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
       name: newTeacherName.trim(),
       initial: newTeacherInitial.trim().toUpperCase(),
       email: newTeacherEmail.trim(),
-      offDay: newTeacherOffDay,
+      offDays: newTeacherOffDays,
       counselingHour: counselingString
     };
     onUpdateData({ ...data, teachers: [...data.teachers, newTeacher] });
     setNewTeacherName('');
     setNewTeacherInitial('');
     setNewTeacherEmail('');
-    setNewTeacherOffDay('');
+    setNewTeacherOffDays([]);
     setNewTeacherCounselingDay('');
     setNewTeacherCounselingTime('');
     setNewTeacherCounselingNone(false);
@@ -423,12 +437,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
           <InputField label="Initial" value={newTeacherInitial} onChange={(e: any) => setNewTeacherInitial(e.target.value)} placeholder="JD" />
           <InputField label="Email" value={newTeacherEmail} onChange={(e: any) => setNewTeacherEmail(e.target.value)} type="email" placeholder="john@diu.edu.bd" />
           
-          <SelectField label="Off Day" value={newTeacherOffDay} onChange={(e: any) => setNewTeacherOffDay(e.target.value)} options={Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)} />
+          {/* Off Days Multi-Select */}
+          <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Off Days (Select Multiple)</label>
+              <div className="flex flex-wrap gap-2">
+                  {Object.values(DayOfWeek).map(day => {
+                      const isSelected = newTeacherOffDays.includes(day);
+                      return (
+                          <button
+                            key={day}
+                            onClick={() => toggleOffDay(day)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                isSelected 
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' 
+                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                              {day.substring(0, 3)}
+                          </button>
+                      );
+                  })}
+              </div>
+          </div>
           
           {/* Counseling Hour Split Input */}
-          <div className="md:col-span-2 space-y-2">
-             <label className="text-sm font-medium text-gray-600 block">Counseling Hour</label>
-             <div className="flex items-center gap-3">
+          <div className="md:col-span-3 space-y-2 pt-2 border-t border-gray-50">
+             <label className="text-sm font-medium text-gray-700 block">Counseling Hour</label>
+             <div className="flex flex-col md:flex-row md:items-center gap-3">
                  <div className="flex-1">
                      <SelectField 
                         label="Day" 
@@ -445,7 +480,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
                         options={TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)} 
                      />
                  </div>
-                 <div className="flex items-center gap-2 px-2">
+                 <div className="flex items-center gap-2 px-2 pt-1 md:pt-0">
                      <input 
                        type="checkbox" 
                        id="cNone"
@@ -473,7 +508,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
       </div>
       <DataTable 
         items={data.teachers} 
-        fields={[{key:'name', label:'Name'}, {key:'initial', label:'Initial'}, {key:'email', label:'Email'}, {key:'offDay', label:'Off Day'}, {key:'counselingHour', label:'Counseling'}]} 
+        fields={[{key:'name', label:'Name'}, {key:'initial', label:'Initial'}, {key:'email', label:'Email'}, {key:'offDays', label:'Off Days'}, {key:'counselingHour', label:'Counseling'}]} 
         onDelete={(id: string) => onUpdateData({...data, teachers: data.teachers.filter(x => x.id !== id)})} 
       />
     </div>

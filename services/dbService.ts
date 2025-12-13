@@ -7,9 +7,9 @@ const INITIAL_DATA: AppData = {
     isPublished: true,
   },
   teachers: [
-    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd', offDay: 'Friday', counselingHour: 'Sunday 10:00 AM - 11:30 AM' },
-    { id: 't2', name: 'Ms. Jane Smith', initial: 'JS', email: 'jane@diu.edu.bd', offDay: 'Saturday', counselingHour: 'Monday 11:30 AM - 01:00 PM' },
-    { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd', offDay: 'Thursday', counselingHour: 'None' },
+    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd', offDays: ['Friday', 'Saturday'], counselingHour: 'Sunday 10:00 AM - 11:30 AM' },
+    { id: 't2', name: 'Ms. Jane Smith', initial: 'JS', email: 'jane@diu.edu.bd', offDays: ['Saturday'], counselingHour: 'Monday 11:30 AM - 01:00 PM' },
+    { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd', offDays: ['Thursday'], counselingHour: 'None' },
   ],
   courses: [
     { id: 'c1', code: 'CSE101', name: 'Structured Programming', credits: 3 },
@@ -47,6 +47,24 @@ export const getInitialData = (): AppData => {
         ...s,
         studentCount: s.studentCount || 0
     }));
+
+    // Migration: Convert legacy single 'offDay' string to 'offDays' array
+    parsed.teachers = parsed.teachers.map((t: any) => {
+        let offDays = t.offDays;
+        if (!offDays) {
+            // Check for old key
+            if (t.offDay) {
+                offDays = [t.offDay];
+            } else {
+                offDays = [];
+            }
+        }
+        return {
+            ...t,
+            offDays: offDays
+        };
+    });
+
     return parsed;
   }
   return INITIAL_DATA;
@@ -110,6 +128,15 @@ export const checkConflict = (
         message: `Section ${getNameById(session.sectionId, 'sections', data)} already has a class with ${teacherName}.` 
       };
     }
+  }
+
+  // 4. Teacher Off-Day Conflict Check
+  const teacher = data.teachers.find(t => t.id === newSession.teacherId);
+  if (teacher && teacher.offDays && teacher.offDays.includes(newSession.day)) {
+      return {
+          hasConflict: true,
+          message: `${teacher.name} has an off-day on ${newSession.day}.`
+      };
   }
 
   return { hasConflict: false };

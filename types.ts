@@ -3,7 +3,7 @@ export interface Teacher {
   name: string;
   initial: string;
   email: string;
-  offDay?: string;
+  offDays: string[]; // Changed from offDay?: string to string[]
   counselingHour?: string;
 }
 

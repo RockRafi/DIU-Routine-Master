@@ -213,7 +213,11 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                          return (
                              <>
                                 <div><span className="font-semibold">Counseling Hour:</span> {t.counselingHour || 'Not set'}</div>
-                                <div><span className="font-semibold">Off Day:</span> {t.offDay || 'Not set'}</div>
+                                {/* Updated to handle multiple off days */}
+                                <div>
+                                  <span className="font-semibold">Off Days:</span>{' '}
+                                  {t.offDays && t.offDays.length > 0 ? t.offDays.join(', ') : 'None'}
+                                </div>
                              </>
                          )
                      })()}
