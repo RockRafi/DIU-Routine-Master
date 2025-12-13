@@ -10,6 +10,23 @@
       body {
         font-family: 'Inter', sans-serif;
       }
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        body {
+          background: white !important;
+        }
+        #root {
+          width: 100%;
+          margin: 0;
+          padding: 0;
+        }
+        /* Ensure table fits */
+        table {
+          width: 100% !important;
+        }
+      }
     </style>
   <script type="importmap">
 {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppData } from '../types';
 import ScheduleTable from './ScheduleTable';
-import { Search, User, Users, Calendar, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Search, User, Users, Calendar, ShieldCheck, ChevronDown, Download } from 'lucide-react';
 
 interface PublicViewProps {
   data: AppData;
@@ -12,10 +12,14 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
   const [viewMode, setViewMode] = useState<'student' | 'teacher'>('student');
   const [selectedId, setSelectedId] = useState<string>('');
 
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFDF6] text-gray-900 font-sans selection:bg-blue-100">
       {/* M3 Top App Bar */}
-      <header className="sticky top-0 z-30 bg-[#FDFDF6]/80 backdrop-blur-md border-b border-gray-100">
+      <header className="sticky top-0 z-30 bg-[#FDFDF6]/80 backdrop-blur-md border-b border-gray-100 no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
@@ -36,9 +40,9 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         
         {/* Hero Section */}
-        <div className="text-center mb-16 animate-in slide-in-from-bottom-4 fade-in duration-700">
+        <div className="text-center mb-16 animate-in slide-in-from-bottom-4 fade-in duration-700 no-print">
           <div className="inline-block mb-4 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full text-blue-600 text-xs font-semibold tracking-wide uppercase">
-            Fall 2024 Schedule
+            Fall 2025 Schedule
           </div>
           <h1 className="text-4xl md:text-6xl font-normal text-gray-900 mb-6 tracking-tight">
             Find your <span className="text-blue-600 font-medium">Class Routine</span>
@@ -49,7 +53,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
         </div>
 
         {/* View Switcher */}
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-12 no-print">
           <div className="bg-gray-100/50 p-1.5 rounded-full inline-flex relative">
              <div 
                 className={`absolute inset-y-1.5 transition-all duration-300 ease-out bg-white rounded-full shadow-sm ${viewMode === 'student' ? 'left-1.5 w-[calc(50%-6px)]' : 'left-[50%] w-[calc(50%-6px)]'}`}
@@ -74,7 +78,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
         </div>
 
         {/* Search/Select Field */}
-        <div className="max-w-lg mx-auto mb-16">
+        <div className="max-w-lg mx-auto mb-16 no-print">
           <div className="relative group">
             <select
               value={selectedId}
@@ -108,12 +112,20 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                   }
                 </h2>
                 <p className="text-gray-500 mt-2 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Weekly Routine
+                  <Calendar className="w-4 h-4" /> Fall 2025 Weekly Routine
                 </p>
               </div>
-              <div className="text-right hidden md:block">
-                 <div className="text-sm text-gray-400">Last Updated</div>
-                 <div className="font-medium text-gray-700">Today</div>
+              <div className="flex items-center gap-4">
+                 <button 
+                  onClick={handleExportPDF}
+                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all no-print"
+                 >
+                   <Download className="w-4 h-4" /> Export Routine PDF
+                 </button>
+                 <div className="text-right hidden md:block">
+                    <div className="text-sm text-gray-400">Semester</div>
+                    <div className="font-medium text-gray-700">Fall 2025</div>
+                 </div>
               </div>
             </div>
             
@@ -122,9 +134,18 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
               filterType={viewMode === 'student' ? 'section' : 'teacher'} 
               filterId={selectedId} 
             />
+
+            <div className="mt-8 text-center md:hidden no-print">
+                 <button 
+                  onClick={handleExportPDF}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-full shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all"
+                 >
+                   <Download className="w-4 h-4" /> Download PDF
+                 </button>
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-700">
+          <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-700 no-print">
             <div className="w-40 h-40 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
               <Search className="w-16 h-16 text-gray-300" />
             </div>
@@ -136,7 +157,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
         )}
       </main>
 
-      <footer className="mt-auto py-12 text-center border-t border-gray-100 bg-white">
+      <footer className="mt-auto py-12 text-center border-t border-gray-100 bg-white no-print">
         <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} DIU CIS Department. All rights reserved.</p>
       </footer>
     </div>
