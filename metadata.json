@@ -1,0 +1,5 @@
+{
+  "name": "DIU Routine Master",
+  "description": "A centralized, intelligent routine management system for the DIU CIS department. Features conflict detection, AI-powered schedule generation, and role-based access for students and administrators.",
+  "requestFramePermissions": []
+}
