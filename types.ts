@@ -3,6 +3,8 @@ export interface Teacher {
   name: string;
   initial: string;
   email: string;
+  offDay?: string;
+  counselingHour?: string;
 }
 
 export interface Course {
@@ -60,6 +62,5 @@ export const TIME_SLOTS = [
   "10:00 - 11:30",
   "11:30 - 13:00",
   "13:00 - 14:30",
-  "14:30 - 16:00",
-  "16:00 - 17:30"
+  "14:30 - 16:00"
 ];
