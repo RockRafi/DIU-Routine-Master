@@ -2,8 +2,12 @@ import { AppData, ClassSession, DayOfWeek, Teacher, Course, Room, Section } from
 
 // Initial Mock Data
 const INITIAL_DATA: AppData = {
+  settings: {
+    semesterName: 'Fall 2025',
+    isPublished: true,
+  },
   teachers: [
-    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd' },
+    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd', offDay: 'Friday', counselingHour: 'Sun 10:00-11:30' },
     { id: 't2', name: 'Ms. Jane Smith', initial: 'JS', email: 'jane@diu.edu.bd' },
     { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd' },
   ],
@@ -21,9 +25,9 @@ const INITIAL_DATA: AppData = {
     { id: 'r4', roomNumber: 'AB4-Lab2', capacity: 30, type: 'Lab' },
   ],
   sections: [
-    { id: 's1', name: 'Section A', batch: 56 },
-    { id: 's2', name: 'Section B', batch: 56 },
-    { id: 's3', name: 'Section A', batch: 57 },
+    { id: 's1', name: 'A', batch: 56 },
+    { id: 's2', name: 'B', batch: 56 },
+    { id: 's3', name: '', batch: 57 }, // Example of batch with no specific section
   ],
   schedule: []
 };
@@ -32,7 +36,15 @@ const INITIAL_DATA: AppData = {
 
 export const getInitialData = (): AppData => {
   const stored = localStorage.getItem('diu_routine_data');
-  return stored ? JSON.parse(stored) : INITIAL_DATA;
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    // Backward compatibility check for settings
+    if (!parsed.settings) {
+      parsed.settings = INITIAL_DATA.settings;
+    }
+    return parsed;
+  }
+  return INITIAL_DATA;
 };
 
 export const saveData = (data: AppData) => {
@@ -46,9 +58,12 @@ export interface ConflictError {
 
 // Helper to get names for error messages
 const getNameById = (id: string, type: 'teachers' | 'rooms' | 'sections', data: AppData): string => {
-  if (type === 'teachers') return data.teachers.find(t => t.id === id)?.initial || id;
+  if (type === 'teachers') return data.teachers.find(t => t.id === id)?.name || id;
   if (type === 'rooms') return data.rooms.find(r => r.id === id)?.roomNumber || id;
-  if (type === 'sections') return data.sections.find(s => s.id === id)?.name || id;
+  if (type === 'sections') {
+    const s = data.sections.find(s => s.id === id);
+    return s ? (s.name ? `Batch ${s.batch} (${s.name})` : `Batch ${s.batch}`) : id;
+  }
   return id;
 };
 
@@ -68,15 +83,27 @@ export const checkConflict = (
   for (const session of overlappingSessions) {
     // 1. Teacher Conflict
     if (session.teacherId === newSession.teacherId) {
-      return { hasConflict: true, message: `Teacher is already booked in Room ${getNameById(session.roomId, 'rooms', data)}` };
+      const roomName = getNameById(session.roomId, 'rooms', data);
+      return { 
+        hasConflict: true, 
+        message: `${getNameById(session.teacherId, 'teachers', data)} is already assigned to ${roomName} at this time.` 
+      };
     }
     // 2. Room Conflict
     if (session.roomId === newSession.roomId) {
-      return { hasConflict: true, message: `Room is already occupied by Section ${getNameById(session.sectionId, 'sections', data)}` };
+      const teacherName = getNameById(session.teacherId, 'teachers', data);
+      return { 
+        hasConflict: true, 
+        message: `Room ${getNameById(session.roomId, 'rooms', data)} is already booked by ${teacherName}. Please contact them.` 
+      };
     }
     // 3. Section Conflict
     if (session.sectionId === newSession.sectionId) {
-      return { hasConflict: true, message: `Section already has a class with ${getNameById(session.teacherId, 'teachers', data)}` };
+      const teacherName = getNameById(session.teacherId, 'teachers', data);
+      return { 
+        hasConflict: true, 
+        message: `Section ${getNameById(session.sectionId, 'sections', data)} already has a class with ${teacherName}.` 
+      };
     }
   }
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { AppData } from '../types';
+import { AppData, getBatchColor } from '../types';
 import ScheduleTable from './ScheduleTable';
-import { Search, User, Users, Calendar, ShieldCheck, ChevronDown, Download } from 'lucide-react';
+import { Search, User, Users, Calendar, ShieldCheck, ChevronDown, Download, AlertTriangle } from 'lucide-react';
 
 interface PublicViewProps {
   data: AppData;
@@ -15,6 +15,15 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
   const handleExportPDF = () => {
     window.print();
   };
+
+  const isMaintenance = !data.settings.isPublished;
+
+  // Group sections by batch for clearer display
+  const sectionsByBatch = data.sections.reduce((acc, section) => {
+      if (!acc[section.batch]) acc[section.batch] = [];
+      acc[section.batch].push(section);
+      return acc;
+  }, {} as Record<number, typeof data.sections>);
 
   return (
     <div className="min-h-screen bg-[#FDFDF6] text-gray-900 font-sans selection:bg-blue-100">
@@ -37,12 +46,21 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
         </div>
       </header>
 
+      {isMaintenance ? (
+          <main className="max-w-7xl mx-auto px-4 py-20 text-center">
+               <div className="inline-flex items-center justify-center w-24 h-24 bg-yellow-100 text-yellow-600 rounded-full mb-6">
+                   <AlertTriangle className="w-10 h-10" />
+               </div>
+               <h1 className="text-3xl font-bold text-gray-900 mb-4">Routine System Updating</h1>
+               <p className="text-gray-500 max-w-md mx-auto">The schedule for {data.settings.semesterName} is currently being finalized by the administration. Please check back later.</p>
+          </main>
+      ) : (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         
         {/* Hero Section */}
         <div className="text-center mb-16 animate-in slide-in-from-bottom-4 fade-in duration-700 no-print">
           <div className="inline-block mb-4 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full text-blue-600 text-xs font-semibold tracking-wide uppercase">
-            Fall 2025 Schedule
+            {data.settings.semesterName} Schedule
           </div>
           <h1 className="text-4xl md:text-6xl font-normal text-gray-900 mb-6 tracking-tight">
             Find your <span className="text-blue-600 font-medium">Class Routine</span>
@@ -86,10 +104,20 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
               className="block w-full h-16 pl-6 pr-12 text-lg bg-white border border-gray-200 rounded-2xl appearance-none focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer shadow-sm hover:border-gray-300"
             >
               <option value="" disabled hidden></option>
-              {viewMode === 'student' 
-                ? data.sections.map(s => <option key={s.id} value={s.id}>{s.name} (Batch {s.batch})</option>)
-                : data.teachers.map(t => <option key={t.id} value={t.id}>{t.name} ({t.initial})</option>)
-              }
+              {viewMode === 'student' ? (
+                // Group sections by Batch in dropdown
+                Object.entries(sectionsByBatch).map(([batch, sections]) => (
+                   <optgroup key={batch} label={`Batch ${batch}`}>
+                       {sections.map(s => (
+                           <option key={s.id} value={s.id}>
+                               {s.name ? `Section ${s.name}` : `Batch ${s.batch} (Entire)`}
+                           </option>
+                       ))}
+                   </optgroup>
+                ))
+              ) : (
+                data.teachers.map(t => <option key={t.id} value={t.id}>{t.name} ({t.initial})</option>)
+              )}
             </select>
             <label className={`absolute left-6 text-gray-400 pointer-events-none transition-all duration-200 ${selectedId ? '-top-3 bg-white px-2 text-xs text-blue-600 font-medium' : 'top-5 text-lg'}`}>
               Select {viewMode === 'student' ? 'Section' : 'Teacher'}...
@@ -105,14 +133,27 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
           <div className="bg-white rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 p-6 md:p-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
               <div>
-                <h2 className="text-3xl font-medium text-gray-900 tracking-tight">
-                  {viewMode === 'student' 
-                    ? `Section ${data.sections.find(s => s.id === selectedId)?.name}` 
-                    : data.teachers.find(t => t.id === selectedId)?.name
-                  }
+                <h2 className="text-3xl font-medium text-gray-900 tracking-tight flex items-center gap-3">
+                  {viewMode === 'student' ? (
+                     <>
+                        {(() => {
+                            const s = data.sections.find(s => s.id === selectedId);
+                            if (!s) return null;
+                            const colorClass = getBatchColor(s.batch);
+                            return (
+                                <>
+                                    <span className={`text-base px-3 py-1 rounded-full border ${colorClass} opacity-80`}>Batch {s.batch}</span>
+                                    <span>{s.name ? `Section ${s.name}` : 'Schedule'}</span>
+                                </>
+                            );
+                        })()}
+                     </>
+                  ) : (
+                    data.teachers.find(t => t.id === selectedId)?.name
+                  )}
                 </h2>
                 <p className="text-gray-500 mt-2 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> Fall 2025 Weekly Routine
+                  <Calendar className="w-4 h-4" /> {data.settings.semesterName} Weekly Routine
                 </p>
               </div>
               <div className="flex items-center gap-4">
@@ -124,7 +165,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                  </button>
                  <div className="text-right hidden md:block">
                     <div className="text-sm text-gray-400">Semester</div>
-                    <div className="font-medium text-gray-700">Fall 2025</div>
+                    <div className="font-medium text-gray-700">{data.settings.semesterName}</div>
                  </div>
               </div>
             </div>
@@ -134,6 +175,22 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
               filterType={viewMode === 'student' ? 'section' : 'teacher'} 
               filterId={selectedId} 
             />
+            
+            {/* Teacher Details Footer */}
+            {viewMode === 'teacher' && (
+                <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                     {(() => {
+                         const t = data.teachers.find(tr => tr.id === selectedId);
+                         if(!t) return null;
+                         return (
+                             <>
+                                <div><span className="font-semibold">Counseling Hour:</span> {t.counselingHour || 'Not set'}</div>
+                                <div><span className="font-semibold">Off Day:</span> {t.offDay || 'Not set'}</div>
+                             </>
+                         )
+                     })()}
+                </div>
+            )}
 
             <div className="mt-8 text-center md:hidden no-print">
                  <button 
@@ -156,6 +213,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
           </div>
         )}
       </main>
+      )}
 
       <footer className="mt-auto py-12 text-center border-t border-gray-100 bg-white no-print">
         <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} DIU CIS Department. All rights reserved.</p>
