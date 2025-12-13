@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS } from '../types';
 import { checkConflict } from '../services/dbService';
-import { X, Save, AlertCircle } from 'lucide-react';
+import { X, Save, AlertCircle, AlertTriangle } from 'lucide-react';
 
 interface ClassModalProps {
   isOpen: boolean;
@@ -37,6 +37,16 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
     }
   }, [isOpen, initialDay, initialTime]);
 
+  // Check for off-day conflict whenever teacher or day changes
+  const offDayWarning = React.useMemo(() => {
+    if (!teacherId) return null;
+    const teacher = data.teachers.find(t => t.id === teacherId);
+    if (teacher && teacher.offDays && teacher.offDays.includes(day)) {
+        return `${teacher.name} has an off-day on ${day}.`;
+    }
+    return null;
+  }, [teacherId, day, data.teachers]);
+
   if (!isOpen) return null;
 
   // Get unique batches
@@ -48,6 +58,12 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (offDayWarning) {
+        // Prevent submission if off-day conflict exists (optional: or just warn)
+        setError(offDayWarning);
+        return;
+    }
 
     if (!teacherId || !courseId || !roomId || !selectedSectionId) {
       setError("Please fill in all fields.");
@@ -88,10 +104,17 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {error && (
-            <div className="p-4 bg-red-50 text-red-700 rounded-xl flex items-start gap-3 text-sm border border-red-100">
+            <div className="p-4 bg-red-50 text-red-700 rounded-xl flex items-start gap-3 text-sm border border-red-100 animate-in slide-in-from-top-2">
               <AlertCircle className="w-5 h-5 shrink-0" />
               <span>{error}</span>
             </div>
+          )}
+          
+          {offDayWarning && !error && (
+             <div className="p-4 bg-orange-50 text-orange-700 rounded-xl flex items-start gap-3 text-sm border border-orange-100 animate-in slide-in-from-top-2">
+                 <AlertTriangle className="w-5 h-5 shrink-0" />
+                 <span><strong>Warning:</strong> {offDayWarning}</span>
+             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -154,13 +177,20 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
               <select 
                 value={teacherId} 
                 onChange={e => setTeacherId(e.target.value)}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                className={`w-full p-3 bg-gray-50 border rounded-xl focus:ring-2 outline-none transition-all ${
+                    offDayWarning 
+                    ? 'border-orange-300 ring-4 ring-orange-100 text-orange-900 bg-orange-50' 
+                    : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500'
+                }`}
               >
                 <option value="" disabled>Select Teacher</option>
                 {data.teachers.map(t => (
-                  <option key={t.id} value={t.id}>{t.name} ({t.initial})</option>
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.initial}) {t.offDays.includes(day) ? '⚠️' : ''}
+                  </option>
                 ))}
               </select>
+              {offDayWarning && <p className="text-xs text-orange-600 font-medium ml-1">⚠️ {offDayWarning}</p>}
             </div>
 
             <div className="space-y-1.5">

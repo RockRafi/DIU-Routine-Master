@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, Room, Teacher, Course, Section } from '../types';
 import ScheduleGrid from './ScheduleGrid';
 import ClassModal from './ClassModal';
-import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download } from 'lucide-react';
+import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download, ChevronDown, Check, X } from 'lucide-react';
 
 // --- Sub-Components Defined Outside ---
 
@@ -20,10 +20,66 @@ const SelectField = ({ label, value, onChange, options }: any) => (
       {label}
     </label>
     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
-      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+      <ChevronDown className="w-4 h-4" />
     </div>
   </div>
 );
+
+const MultiSelectField = ({ label, selectedValues, onChange, options }: { label: string, selectedValues: string[], onChange: (value: string) => void, options: string[] }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative group" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="block w-full h-14 pl-4 pr-10 text-left bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm hover:border-gray-300 relative"
+      >
+        <span className={`block truncate pt-1 ${selectedValues.length === 0 ? 'text-transparent' : 'text-gray-900'}`}>
+           {selectedValues.length > 0 ? selectedValues.join(', ') : 'Select...'}
+        </span>
+        <label className={`absolute left-4 px-1 bg-white text-gray-500 transition-all duration-200 pointer-events-none rounded-sm ${selectedValues.length > 0 || isOpen ? '-top-2.5 text-xs text-blue-600 font-medium' : 'top-4 text-base'}`}>
+            {label}
+        </label>
+        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+          {options.map((option) => {
+             const isSelected = selectedValues.includes(option);
+             return (
+               <div 
+                 key={option} 
+                 onClick={() => onChange(option)}
+                 className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 last:border-0"
+               >
+                 <span className={`text-sm ${isSelected ? 'font-medium text-blue-700' : 'text-gray-700'}`}>
+                   {option}
+                 </span>
+                 {isSelected && <Check className="w-4 h-4 text-blue-600" />}
+               </div>
+             );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const InputField = ({ label, value, onChange, type = "text", placeholder = " " }: any) => (
   <div className="relative group">
@@ -78,7 +134,15 @@ const DataTable = ({ items, fields, onDelete, emptyMessage = "No records found."
                   <td key={f.key} className="px-8 py-5 whitespace-nowrap text-sm text-gray-700">
                     {/* Handle arrays (like offDays) gracefully */}
                     {Array.isArray(item[f.key]) 
-                        ? (item[f.key].length > 0 ? item[f.key].join(', ') : <span className="text-gray-300">-</span>)
+                        ? (item[f.key].length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                                {item[f.key].map((d: string) => (
+                                    <span key={d} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                        {d.substring(0, 3)}
+                                    </span>
+                                ))}
+                            </div>
+                          ) : <span className="text-gray-300">-</span>)
                         : (item[f.key] || <span className="text-gray-300">-</span>)
                     }
                   </td>
@@ -437,27 +501,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
           <InputField label="Initial" value={newTeacherInitial} onChange={(e: any) => setNewTeacherInitial(e.target.value)} placeholder="JD" />
           <InputField label="Email" value={newTeacherEmail} onChange={(e: any) => setNewTeacherEmail(e.target.value)} type="email" placeholder="john@diu.edu.bd" />
           
-          {/* Off Days Multi-Select */}
+          {/* Off Days Multi-Select Replaced here */}
           <div className="md:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Off Days (Select Multiple)</label>
-              <div className="flex flex-wrap gap-2">
-                  {Object.values(DayOfWeek).map(day => {
-                      const isSelected = newTeacherOffDays.includes(day);
-                      return (
-                          <button
-                            key={day}
-                            onClick={() => toggleOffDay(day)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                isSelected 
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200' 
-                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                            }`}
-                          >
-                              {day.substring(0, 3)}
-                          </button>
-                      );
-                  })}
-              </div>
+              <MultiSelectField 
+                label="Off Days (Select Multiple)"
+                selectedValues={newTeacherOffDays}
+                onChange={toggleOffDay}
+                options={Object.values(DayOfWeek)}
+              />
           </div>
           
           {/* Counseling Hour Split Input */}
