@@ -82,20 +82,21 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm shadow-blue-200">
                <Calendar className="w-5 h-5" />
              </div>
-             <span className="text-xl font-medium text-gray-800 tracking-tight">DIU Routine Master</span>
+             <span className="text-xl font-medium text-gray-800 tracking-tight hidden sm:inline">DIU Routine Master</span>
+             <span className="text-xl font-medium text-gray-800 tracking-tight sm:hidden">Routine Master</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
               <button 
                 onClick={() => { setSelectedId(''); setTimeout(() => window.print(), 100); }}
-                className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
                 title="Print Full Semester Routine"
               >
                 <Download className="w-4 h-4" />
-                <span>Full Schedule</span>
+                <span className="hidden sm:inline">Full Schedule</span>
               </button>
               <button 
                 onClick={onAdminClick}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all"
               >
                 <ShieldCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">Admin</span>
