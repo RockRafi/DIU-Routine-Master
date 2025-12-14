@@ -1,19 +1,48 @@
 import React from 'react';
-import { AppData, DayOfWeek, TIME_SLOTS, getBatchColor } from '../types';
+import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, getBatchColor } from '../types';
 import { Plus } from 'lucide-react';
 
 interface ScheduleGridProps {
   data: AppData;
   onSlotClick: (day: DayOfWeek, timeSlot: string) => void;
   onDeleteSession: (sessionId: string) => void;
+  onMoveSession?: (sessionId: string, newDay: DayOfWeek, newTimeSlot: string) => void;
+  onEditSession?: (session: ClassSession) => void;
 }
 
-const ScheduleGrid: React.FC<ScheduleGridProps> = ({ data, onSlotClick, onDeleteSession }) => {
+const ScheduleGrid: React.FC<ScheduleGridProps> = ({ 
+  data, 
+  onSlotClick, 
+  onDeleteSession, 
+  onMoveSession,
+  onEditSession
+}) => {
   const days = Object.values(DayOfWeek);
 
   const getSessionsForSlot = (day: DayOfWeek, slot: string) => {
     const startTime = slot.split(' - ')[0];
     return data.schedule.filter(s => s.day === day && s.startTime === startTime);
+  };
+
+  // -- Drag and Drop Handlers --
+
+  const handleDragStart = (e: React.DragEvent, sessionId: string) => {
+    e.dataTransfer.setData("sessionId", sessionId);
+    e.dataTransfer.effectAllowed = "move";
+    // Optional: Set a custom drag image or style here if needed
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Necessary to allow dropping
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, day: DayOfWeek, slot: string) => {
+    e.preventDefault();
+    const sessionId = e.dataTransfer.getData("sessionId");
+    if (sessionId && onMoveSession) {
+      onMoveSession(sessionId, day, slot);
+    }
   };
 
   return (
@@ -43,6 +72,8 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ data, onSlotClick, onDelete
                       key={slot} 
                       className="p-2 border-l border-gray-100 align-top h-32 relative group cursor-pointer hover:bg-blue-50/30 transition-colors"
                       onClick={() => onSlotClick(day, slot)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, day, slot)}
                     >
                       {/* Empty State / Add Button */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none print:hidden">
@@ -63,21 +94,28 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ data, onSlotClick, onDelete
                           return (
                             <div 
                               key={session.id} 
-                              className={`p-2 rounded-lg border text-xs shadow-sm hover:shadow-md transition-shadow relative group/card ${batchColor} bg-opacity-80`}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, session.id)}
+                              onDoubleClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onEditSession) onEditSession(session);
+                              }}
+                              className={`p-2 rounded-lg border text-xs shadow-sm hover:shadow-md transition-all relative group/card ${batchColor} bg-opacity-90 cursor-grab active:cursor-grabbing hover:scale-[1.02]`}
                               onClick={(e) => e.stopPropagation()} 
+                              title="Double click to edit, Drag to move"
                             >
                               <button 
                                 onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }}
-                                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-sm print:hidden"
+                                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-sm print:hidden z-20"
                               >
                                 <Plus className="w-3 h-3 rotate-45" />
                               </button>
-                              <div className="font-bold flex justify-between">
+                              <div className="font-bold flex justify-between pointer-events-none">
                                 <span>{course?.code}</span>
                                 <span>{room?.roomNumber}</span>
                               </div>
-                              <div className="truncate my-0.5 opacity-90" title={teacher?.name}>{teacher?.initial}</div>
-                              <div className="font-medium mt-1 inline-block px-1.5 py-0.5 bg-white/50 rounded shadow-sm">
+                              <div className="truncate my-0.5 opacity-90 pointer-events-none">{teacher?.initial}</div>
+                              <div className="font-medium mt-1 inline-block px-1.5 py-0.5 bg-white/50 rounded shadow-sm pointer-events-none">
                                 {section?.name ? `B-${section.batch} (${section.name})` : `Batch ${section?.batch}`}
                               </div>
                             </div>

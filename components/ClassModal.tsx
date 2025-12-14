@@ -10,9 +10,10 @@ interface ClassModalProps {
   data: AppData;
   initialDay?: DayOfWeek;
   initialTime?: string;
+  sessionToEdit?: ClassSession;
 }
 
-const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, initialDay, initialTime }) => {
+const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, initialDay, initialTime, sessionToEdit }) => {
   const [day, setDay] = useState<DayOfWeek>(DayOfWeek.Sunday);
   const [timeSlot, setTimeSlot] = useState<string>(TIME_SLOTS[0]);
   const [selectedBatch, setSelectedBatch] = useState<number | ''>('');
@@ -25,17 +26,32 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
   // Sync props to state when modal opens
   useEffect(() => {
     if (isOpen) {
-      if (initialDay) setDay(initialDay);
-      if (initialTime) setTimeSlot(initialTime);
+      if (sessionToEdit) {
+          // Edit Mode
+          setDay(sessionToEdit.day);
+          setTimeSlot(`${sessionToEdit.startTime} - ${sessionToEdit.endTime}`);
+          setTeacherId(sessionToEdit.teacherId);
+          setCourseId(sessionToEdit.courseId);
+          setRoomId(sessionToEdit.roomId);
+          setSelectedSectionId(sessionToEdit.sectionId);
+          
+          const section = data.sections.find(s => s.id === sessionToEdit.sectionId);
+          if (section) setSelectedBatch(section.batch);
+      } else {
+          // Create Mode
+          if (initialDay) setDay(initialDay);
+          if (initialTime) setTimeSlot(initialTime);
+          
+          // Reset fields
+          setTeacherId('');
+          setCourseId('');
+          setRoomId('');
+          setSelectedBatch('');
+          setSelectedSectionId('');
+      }
       setError(null);
-      // Reset fields
-      setTeacherId('');
-      setCourseId('');
-      setRoomId('');
-      setSelectedBatch('');
-      setSelectedSectionId('');
     }
-  }, [isOpen, initialDay, initialTime]);
+  }, [isOpen, initialDay, initialTime, sessionToEdit, data.sections]);
 
   // Check for off-day conflict whenever teacher or day changes
   const offDayWarning = React.useMemo(() => {
@@ -50,7 +66,7 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
   if (!isOpen) return null;
 
   // Get unique batches
-  const uniqueBatches = Array.from(new Set(data.sections.map(s => s.batch))).sort((a, b) => a - b);
+  const uniqueBatches = Array.from(new Set(data.sections.map(s => s.batch))).sort((a: number, b: number) => a - b);
   
   // Filter sections based on selected batch
   const availableSections = data.sections.filter(s => s.batch === Number(selectedBatch));
@@ -72,7 +88,7 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
 
     const [start, end] = timeSlot.split(' - ');
     const newSession: ClassSession = {
-      id: crypto.randomUUID(),
+      id: sessionToEdit ? sessionToEdit.id : crypto.randomUUID(), // Keep existing ID if editing
       day,
       startTime: start,
       endTime: end,
@@ -96,7 +112,7 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-[24px] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h2 className="text-xl font-semibold text-gray-800">Schedule Class</h2>
+          <h2 className="text-xl font-semibold text-gray-800">{sessionToEdit ? 'Edit Class Session' : 'Schedule Class'}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
             <X className="w-5 h-5" />
           </button>

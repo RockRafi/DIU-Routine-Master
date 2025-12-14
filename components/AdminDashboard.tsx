@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, Room, Teacher, Course, Section } from '../types';
 import ScheduleGrid from './ScheduleGrid';
 import ClassModal from './ClassModal';
+import { checkConflict } from '../services/dbService';
 import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download, ChevronDown, Check, X } from 'lucide-react';
 
 // --- Sub-Components Defined Outside ---
@@ -184,6 +185,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sessionToEdit, setSessionToEdit] = useState<ClassSession | undefined>(undefined);
   const [modalInitialDay, setModalInitialDay] = useState<DayOfWeek>(DayOfWeek.Sunday);
   const [modalInitialTime, setModalInitialTime] = useState<string>(TIME_SLOTS[0]);
 
@@ -216,14 +218,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   // -- Actions --
 
   const handleOpenModal = (day?: DayOfWeek, time?: string) => {
+    setSessionToEdit(undefined); // Reset edit mode
     if (day) setModalInitialDay(day);
     if (time) setModalInitialTime(time);
     setIsModalOpen(true);
   };
 
+  const handleEditSession = (session: ClassSession) => {
+    setSessionToEdit(session);
+    setModalInitialDay(session.day);
+    // Combine start and end time to match TIME_SLOTS format
+    const timeSlot = `${session.startTime} - ${session.endTime}`;
+    setModalInitialTime(timeSlot);
+    setIsModalOpen(true);
+  };
+
   const handleSaveSession = (newSession: ClassSession) => {
-    const newData = { ...data, schedule: [...data.schedule, newSession] };
+    let newSchedule;
+    // Check if we are updating an existing session
+    if (data.schedule.find(s => s.id === newSession.id)) {
+        newSchedule = data.schedule.map(s => s.id === newSession.id ? newSession : s);
+    } else {
+        newSchedule = [...data.schedule, newSession];
+    }
+    const newData = { ...data, schedule: newSchedule };
     onUpdateData(newData);
+  };
+
+  const handleMoveSession = (sessionId: string, newDay: DayOfWeek, newTimeSlot: string) => {
+      const sessionToMove = data.schedule.find(s => s.id === sessionId);
+      if (!sessionToMove) return;
+
+      const [start, end] = newTimeSlot.split(' - ');
+      
+      const movedSession: ClassSession = {
+          ...sessionToMove,
+          day: newDay,
+          startTime: start,
+          endTime: end
+      };
+
+      // Check conflict
+      const conflict = checkConflict(movedSession, data);
+      
+      if (conflict.hasConflict) {
+          alert(`Cannot move class: ${conflict.message}`);
+          return;
+      }
+
+      // Update
+      const newSchedule = data.schedule.map(s => s.id === sessionId ? movedSession : s);
+      onUpdateData({ ...data, schedule: newSchedule });
   };
 
   const handleDeleteSession = (id: string) => {
@@ -373,7 +418,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 gap-4">
             <div>
                 <h3 className="text-xl font-bold text-gray-800">Master Schedule</h3>
-                <p className="text-gray-500 text-sm">Click on any cell to assign a class.</p>
+                <p className="text-gray-500 text-sm">Drag and drop classes to move them. Double click to edit.</p>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
                {!data.settings.isPublished && (
@@ -399,7 +444,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             <ScheduleGrid 
                 data={data} 
                 onSlotClick={handleOpenModal} 
-                onDeleteSession={handleDeleteSession} 
+                onDeleteSession={handleDeleteSession}
+                onMoveSession={handleMoveSession}
+                onEditSession={handleEditSession}
             />
         </div>
     </div>
@@ -637,6 +684,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         data={data}
         initialDay={modalInitialDay}
         initialTime={modalInitialTime}
+        sessionToEdit={sessionToEdit}
       />
 
       <aside className="w-full md:w-80 bg-[#F8F9FA]/80 backdrop-blur-xl md:h-screen md:sticky md:top-0 p-6 border-r border-gray-200 flex flex-col z-20">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppData, getBatchColor } from '../types';
+import { AppData, getBatchColor, Section } from '../types';
 import ScheduleTable from './ScheduleTable';
 import { Search, User, Users, Calendar, ShieldCheck, ChevronDown, Download, AlertTriangle, Layers } from 'lucide-react';
 
@@ -23,7 +23,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
       if (!acc[section.batch]) acc[section.batch] = [];
       acc[section.batch].push(section);
       return acc;
-  }, {} as Record<number, typeof data.sections>);
+  }, {} as Record<number, Section[]>);
 
   // Determine filter type based on selection
   let filterType: 'section' | 'batch' | 'teacher' = 'section';
@@ -175,7 +175,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                        <option value={`batch-${batch}`} className="font-semibold text-blue-600">
                            All Sections (Batch {batch})
                        </option>
-                       {sections.map(s => (
+                       {(sections as Section[]).map(s => (
                            <option key={s.id} value={s.id}>
                                {s.name ? `Section ${s.name}` : `Batch ${s.batch} (Only)`}
                            </option>
