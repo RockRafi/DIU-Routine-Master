@@ -25,11 +25,11 @@ const INITIAL_DATA: AppData = {
     { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd', phone: '+8801700000003', offDays: ['Thursday'], counselingHour: 'None' },
   ],
   courses: [
-    { id: 'c1', code: 'CSE101', name: 'Structured Programming', credits: 3 },
-    { id: 'c2', code: 'CSE102', name: 'Discrete Mathematics', credits: 3 },
-    { id: 'c3', code: 'ENG101', name: 'English I', credits: 3 },
-    { id: 'c4', code: 'CSE201', name: 'Data Structures', credits: 3 },
-    { id: 'c5', code: 'CSE202', name: 'OOP', credits: 3 },
+    { id: 'c1', code: 'CSE101', name: 'Structured Programming', shortName: 'SP', credits: 3 },
+    { id: 'c2', code: 'CSE102', name: 'Discrete Mathematics', shortName: 'DM', credits: 3 },
+    { id: 'c3', code: 'ENG101', name: 'English I', shortName: 'ENG', credits: 3 },
+    { id: 'c4', code: 'CSE201', name: 'Data Structures', shortName: 'DS', credits: 3 },
+    { id: 'c5', code: 'CSE202', name: 'OOP', shortName: 'OOP', credits: 3 },
   ],
   rooms: [
     { id: 'r1', roomNumber: 'AB4-601', type: 'Theory' },
@@ -67,6 +67,12 @@ export const getInitialData = (): AppData => {
         }
         return { ...t, offDays: offDays };
     });
+
+    // Ensure courses have shortNames from previous versions
+    parsed.courses = parsed.courses.map((c: any) => ({
+      ...c,
+      shortName: c.shortName || c.code.substring(0, 4)
+    }));
 
     return parsed;
   }
@@ -107,7 +113,6 @@ export const checkConflict = (
   );
 
   for (const session of overlappingSessions) {
-    // Teacher conflict is always checked
     if (session.teacherId === newSession.teacherId) {
       return { 
         hasConflict: true, 
@@ -115,7 +120,6 @@ export const checkConflict = (
       };
     }
 
-    // Only check room and section conflicts if the new session is NOT a counseling hour
     if (!newSession.counselingHour) {
       if (session.roomId && session.roomId === newSession.roomId) {
         return { 

@@ -68,7 +68,7 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
                 const room = session.roomId ? data.rooms.find(r => r.id === session.roomId) : null;
                 const section = session.sectionId ? data.sections.find(s => s.id === session.sectionId) : null;
                 
-                const batchColorClass = section ? getBatchColor(section.batch) : 'bg-blue-100 border-blue-200 text-blue-900';
+                const batchColorClass = section ? getBatchColor(section.batch) : 'bg-blue-50 border-blue-200 text-blue-900';
 
                 return (
                     <div key={session.id} className={`relative p-3 rounded-xl border text-[11px] leading-tight flex flex-col justify-between shadow-sm hover:shadow-md transition-all ${batchColorClass} bg-opacity-95 group/cell`}>
@@ -81,20 +81,19 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
                         </button>
                         )}
                         
-                        <div className="font-black mb-1.5 flex justify-between items-center text-[12px] tracking-tight text-gray-900">
-                            <span className="truncate mr-1">{course?.code || (session.counselingHour ? 'COUNSELING' : 'N/A')}</span>
-                            <span className="bg-white/60 px-1.5 py-0.5 rounded text-[10px] font-black text-blue-700 border border-blue-200/50">{room?.roomNumber || ''}</span>
+                        <div className="font-black mb-1 flex justify-between items-start text-[14px] tracking-tight text-gray-900">
+                            <span className="truncate mr-1 uppercase">{course?.shortName || course?.code || (session.counselingHour ? 'CONS' : 'N/A')}</span>
+                            <span className="bg-white/70 px-1.5 py-0.5 rounded-md text-[10px] font-black text-gray-600 border border-gray-200/50 whitespace-nowrap">{room?.roomNumber || 'TBA'}</span>
                         </div>
-                        <div className="font-bold line-clamp-2 mb-1.5 text-gray-800 leading-[1.3]" title={course?.name}>
-                            {course?.name || (session.counselingHour ? 'Consultation' : '')}
-                        </div>
-                        <div className="flex justify-between items-end font-black uppercase tracking-tighter mt-auto">
-                            <span className="text-gray-600 bg-white/40 px-1 rounded">{teacher?.initial}</span>
-                            {section && (
-                                <span className="text-blue-800 opacity-80 text-[9px] whitespace-nowrap">
-                                    {section.name ? `B${section.batch}-${section.name}` : `B${section.batch}`}
-                                </span>
-                            )}
+                        
+                        <div className="flex flex-col gap-0.5">
+                          <div className="text-[11px] font-bold text-gray-800">
+                             {section ? (section.name ? `Batch ${section.batch}-${section.name}` : `Batch ${section.batch}`) : 'Counseling'}
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter text-gray-500 border-t border-black/5 pt-1.5 mt-1">
+                              <span title={teacher?.name}>{teacher?.initial}</span>
+                              <span className="opacity-40 italic">{course?.code}</span>
+                          </div>
                         </div>
                     </div>
                 );
@@ -122,10 +121,10 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
           {activeDays.map(day => (
             <tr key={day} className="group hover:bg-blue-50/20 transition-colors">
               <td className="px-4 py-5 whitespace-nowrap text-[11px] font-black text-gray-900 sticky left-0 bg-white group-hover:bg-blue-50/30 z-10 border-r border-gray-200 uppercase tracking-[0.2em]">
-                {day}
+                {day.substring(0, 3)}
               </td>
               {TIME_SLOTS.map(slot => (
-                <td key={`${day}-${slot}`} className="px-2 py-2 align-top h-32 md:h-36 border-r border-gray-50 last:border-r-0">
+                <td key={`${day}-${slot}`} className="px-1 py-1 align-top h-32 border-r border-gray-50 last:border-r-0">
                   {getCellContent(day, slot)}
                 </td>
               ))}

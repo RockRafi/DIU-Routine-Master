@@ -12,6 +12,7 @@ export interface Course {
   id: string;
   code: string;
   name: string;
+  shortName: string; // Added short name for compact display
   credits: number;
 }
 
@@ -76,16 +77,16 @@ export const TIME_SLOTS = [
 
 export const getBatchColor = (batch: number) => {
   const colors = [
-    'bg-blue-100 text-blue-900 border-blue-200',
-    'bg-emerald-100 text-emerald-900 border-emerald-200',
-    'bg-violet-100 text-violet-900 border-violet-200',
-    'bg-amber-100 text-amber-900 border-amber-200',
-    'bg-rose-100 text-rose-900 border-rose-200',
-    'bg-cyan-100 text-cyan-900 border-cyan-200',
-    'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-200',
-    'bg-lime-100 text-lime-900 border-lime-200',
-    'bg-indigo-100 text-indigo-900 border-indigo-200',
-    'bg-orange-100 text-orange-900 border-orange-200',
+    'bg-blue-50 text-blue-900 border-blue-200',
+    'bg-emerald-50 text-emerald-900 border-emerald-200',
+    'bg-violet-50 text-violet-900 border-violet-200',
+    'bg-amber-50 text-amber-900 border-amber-200',
+    'bg-rose-50 text-rose-900 border-rose-200',
+    'bg-cyan-50 text-cyan-900 border-cyan-200',
+    'bg-fuchsia-50 text-fuchsia-900 border-fuchsia-200',
+    'bg-lime-50 text-lime-900 border-lime-200',
+    'bg-indigo-50 text-indigo-900 border-indigo-200',
+    'bg-orange-50 text-orange-900 border-orange-200',
   ];
   return colors[batch % colors.length];
 };

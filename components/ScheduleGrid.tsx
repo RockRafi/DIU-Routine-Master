@@ -69,14 +69,14 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
             {DAYS_ORDER.map(day => (
               <tr key={day} className="hover:bg-gray-50/30 transition-colors">
                 <td className="p-4 font-medium text-gray-800 bg-white sticky left-0 z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                  {day}
+                  {day.substring(0, 3)}
                 </td>
                 {TIME_SLOTS.map(slot => {
                   const sessions = getSessionsForSlot(day, slot);
                   return (
                     <td 
                       key={slot} 
-                      className="p-2 border-l border-gray-100 align-top h-32 relative group cursor-pointer hover:bg-blue-50/30 transition-colors"
+                      className="p-1.5 border-l border-gray-100 align-top h-32 relative group cursor-pointer hover:bg-blue-50/30 transition-colors"
                       onClick={() => onSlotClick(day, slot)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, day, slot)}
@@ -87,13 +87,13 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                         </div>
                       </div>
 
-                      <div className="space-y-2 relative z-10">
+                      <div className="space-y-1.5 relative z-10">
                         {sessions.map(session => {
                           const course = session.courseId ? data.courses.find(c => c.id === session.courseId) : null;
                           const teacher = data.teachers.find(t => t.id === session.teacherId);
                           const room = session.roomId ? data.rooms.find(r => r.id === session.roomId) : null;
                           const section = session.sectionId ? data.sections.find(s => s.id === session.sectionId) : null;
-                          const batchColor = section ? getBatchColor(section.batch) : 'bg-blue-100 text-blue-800';
+                          const batchColor = section ? getBatchColor(section.batch) : 'bg-blue-50 text-blue-800';
 
                           return (
                             <div 
@@ -104,7 +104,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                                   e.stopPropagation();
                                   if (onEditSession) onEditSession(session);
                               }}
-                              className={`p-2 rounded-lg border text-xs shadow-sm hover:shadow-md transition-all relative group/card ${batchColor} bg-opacity-90 cursor-grab active:cursor-grabbing hover:scale-[1.02]`}
+                              className={`p-2 rounded-lg border text-[11px] shadow-sm hover:shadow-md transition-all relative group/card ${batchColor} bg-opacity-90 cursor-grab active:cursor-grabbing hover:scale-[1.02]`}
                               onClick={(e) => e.stopPropagation()} 
                               title="Double click to edit, Drag to move"
                             >
@@ -114,15 +114,16 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                               >
                                 <Plus className="w-3 h-3 rotate-45" />
                               </button>
-                              <div className="font-bold flex justify-between pointer-events-none">
-                                <span>{course?.code || (session.counselingHour ? 'COUNSEL' : 'N/A')}</span>
-                                <span>{room?.roomNumber || ''}</span>
+                              <div className="font-black flex justify-between pointer-events-none text-[12px]">
+                                <span className="uppercase">{course?.shortName || course?.code?.substring(0, 4) || (session.counselingHour ? 'CONS' : 'N/A')}</span>
+                                <span className="opacity-60">{room?.roomNumber || 'TBA'}</span>
                               </div>
-                              <div className="truncate my-0.5 opacity-90 pointer-events-none">
-                                {teacher?.initial} {session.counselingHour ? '🤝' : ''}
+                              <div className="font-bold my-1 text-[10px] pointer-events-none opacity-90">
+                                {section ? (section.name ? `B${section.batch}-${section.name}` : `B${section.batch}`) : 'Counseling'}
                               </div>
-                              <div className="font-medium mt-1 inline-block px-1.5 py-0.5 bg-white/50 rounded shadow-sm pointer-events-none">
-                                {section?.name ? `B-${section.batch} (${section.name})` : (section ? `Batch ${section.batch}` : 'Counseling')}
+                              <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-tighter opacity-70 border-t border-black/5 pt-1 pointer-events-none">
+                                <span>{teacher?.initial}</span>
+                                <span className="italic">{course?.code}</span>
                               </div>
                             </div>
                           );

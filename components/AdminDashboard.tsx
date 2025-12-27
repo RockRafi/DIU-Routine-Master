@@ -208,6 +208,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   const [newTeacherOffDays, setNewTeacherOffDays] = useState<string[]>([]);
   const [newCourseCode, setNewCourseCode] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
+  const [newCourseShortName, setNewCourseShortName] = useState('');
   const [newCourseCredits, setNewCourseCredits] = useState('');
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionBatch, setNewSectionBatch] = useState('');
@@ -317,12 +318,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const handleSaveCourse = () => {
     setErrorMsg(null);
-    if (!newCourseCode || !newCourseName || !newCourseCredits) { setErrorMsg("Required fields missing."); return; }
+    if (!newCourseCode || !newCourseName || !newCourseShortName || !newCourseCredits) { setErrorMsg("Required fields missing."); return; }
     
     const courseData: Course = {
       id: editingCourseId || crypto.randomUUID(),
       code: newCourseCode.trim().toUpperCase(),
       name: newCourseName.trim(),
+      shortName: newCourseShortName.trim().toUpperCase(),
       credits: parseInt(newCourseCredits)
     };
 
@@ -338,11 +340,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   };
 
   const resetCourseForm = () => {
-    setNewCourseCode(''); setNewCourseName(''); setNewCourseCredits(''); setEditingCourseId(null);
+    setNewCourseCode(''); setNewCourseName(''); setNewCourseShortName(''); setNewCourseCredits(''); setEditingCourseId(null);
   };
 
   const handleEditCourse = (c: Course) => {
-    setNewCourseCode(c.code); setNewCourseName(c.name); setNewCourseCredits(c.credits.toString()); setEditingCourseId(c.id);
+    setNewCourseCode(c.code); setNewCourseName(c.name); setNewCourseShortName(c.shortName); setNewCourseCredits(c.credits.toString()); setEditingCourseId(c.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -464,8 +466,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
     <div className="space-y-10 animate-in fade-in duration-500">
         <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingCourseId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
             <h3 className="text-xl font-bold text-gray-800 mb-6">{editingCourseId ? 'Update Course Details' : 'Course Cataloging'}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <InputField label="Course Code" value={newCourseCode} onChange={(e: any) => setNewCourseCode(e.target.value)} placeholder="CSE101" />
+                <InputField label="Short Form" value={newCourseShortName} onChange={(e: any) => setNewCourseShortName(e.target.value)} placeholder="SP" />
                 <InputField label="Course Title" value={newCourseName} onChange={(e: any) => setNewCourseName(e.target.value)} />
                 <InputField label="Credits" value={newCourseCredits} onChange={(e: any) => setNewCourseCredits(e.target.value)} type="number" />
             </div>
@@ -475,7 +478,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
                 <button onClick={handleSaveCourse} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingCourseId ? 'Update Catalog' : 'Register Course'}</button>
             </div>
         </div>
-        <DataTable items={data.courses} fields={[{ key: 'code', label: 'Code' }, { key: 'name', label: 'Title' }, { key: 'credits', label: 'Credits' }]} onEdit={handleEditCourse} onDelete={(id: string) => onUpdateData({ ...data, courses: data.courses.filter(c => c.id !== id), schedule: data.schedule.filter(s => s.courseId !== id), lastModified: formatDate(new Date()) })} />
+        <DataTable items={data.courses} fields={[{ key: 'shortName', label: 'Short Form' }, { key: 'code', label: 'Code' }, { key: 'name', label: 'Title' }, { key: 'credits', label: 'Credits' }]} onEdit={handleEditCourse} onDelete={(id: string) => onUpdateData({ ...data, courses: data.courses.filter(c => c.id !== id), schedule: data.schedule.filter(s => s.courseId !== id), lastModified: formatDate(new Date()) })} />
     </div>
   );
 
