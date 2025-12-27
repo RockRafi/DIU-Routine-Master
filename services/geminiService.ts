@@ -13,7 +13,7 @@ const getAIClient = () => {
 export const generateSampleDataWithAI = async (): Promise<AppData | null> => {
   try {
     const ai = getAIClient();
-    // // Using gemini-3-pro-preview as generating a conflict-free class schedule is a complex logic task.
+    // Using gemini-3-pro-preview as generating a conflict-free class schedule is a complex logic task.
     const model = 'gemini-3-pro-preview';
     
     const prompt = `
@@ -21,7 +21,7 @@ export const generateSampleDataWithAI = async (): Promise<AppData | null> => {
       Return a JSON object with:
       - 5 Teachers (name, initial, email)
       - 5 Courses (code, name, credits)
-      - 4 Rooms (roomNumber, capacity, type['Lab' or 'Theory'])
+      - 4 Rooms (roomNumber, type['Lab' or 'Theory'])
       - 3 Sections (name, batch)
       - 15 ClassSessions (schedule) ensuring NO conflicts (same teacher/room/section at same time).
       
@@ -70,8 +70,7 @@ export const generateSampleDataWithAI = async (): Promise<AppData | null> => {
                 properties: {
                   id: { type: Type.STRING },
                   roomNumber: { type: Type.STRING },
-                  capacity: { type: Type.NUMBER },
-                  type: { type: Type.STRING }, // Enum validation handled by logic if needed, simplify for schema
+                  type: { type: Type.STRING },
                 }
               }
             },
@@ -109,7 +108,6 @@ export const generateSampleDataWithAI = async (): Promise<AppData | null> => {
 
     if (response.text) {
       const data = JSON.parse(response.text) as AppData;
-      // Safety cast for enums/types
       return data;
     }
     return null;

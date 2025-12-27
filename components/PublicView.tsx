@@ -4,7 +4,7 @@ import ScheduleTable from './ScheduleTable';
 import { 
   Search, User, Users, Calendar, ShieldCheck, ChevronDown, 
   Download, AlertTriangle, Clock, MapPin, CheckCircle2, 
-  Minimize2, Maximize2, LayoutGrid, Mail, Phone, Copy, Check, Info, ArrowLeft, Filter, GraduationCap, Layers
+  LayoutGrid, Mail, Info, ArrowLeft, Filter, GraduationCap, Layers, Globe
 } from 'lucide-react';
 
 interface PublicViewProps {
@@ -15,13 +15,13 @@ interface PublicViewProps {
 const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
   const [viewMode, setViewMode] = useState<'student' | 'teacher'>('student');
   const [selectedId, setSelectedId] = useState<string>('');
-  const [utilityTab, setUtilityTab] = useState<'none' | 'today' | 'filter'>('today');
+  const [utilityTab, setUtilityTab] = useState<'none' | 'today' | 'filter' | 'master'>('today');
   const [showFreeRooms, setShowFreeRooms] = useState(false);
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>(() => {
     const days = [DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday];
     return days[new Date().getDay()];
   });
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  
   const routineRef = useRef<HTMLDivElement>(null);
 
   const DAYS_ORDER = [
@@ -36,7 +36,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const month = monthNames[date.getMonth()];
     const year = date.getFullYear();
-    return `${dayName}, ${day}-${month}-${year}`;
+    return `${dayName}, ${day}-${month}-${year}`.toUpperCase();
   }, []);
 
   const today = useMemo(() => {
@@ -45,13 +45,13 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
   }, []);
 
   useEffect(() => {
-    if (selectedId && routineRef.current && !isFullScreen) {
+    if (selectedId && routineRef.current) {
       const offset = 100;
       const elementPosition = routineRef.current.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
       window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
-  }, [selectedId, isFullScreen]);
+  }, [selectedId]);
 
   const handleExportPDF = () => {
     window.print();
@@ -74,40 +74,45 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
     if (selectedId.startsWith('batch-')) {
       filterType = 'batch';
       filterValue = selectedId.replace('batch-', '');
-      displayTitle = `Batch ${filterValue} (All Sections)`;
+      displayTitle = `Batch ${filterValue}`;
     } else {
       filterType = 'section';
       const s = data.sections.find(s => s.id === selectedId);
-      if (s) displayTitle = `Batch ${s.batch} - ${s.name ? `Section ${s.name}` : 'Entire Batch'}`;
+      if (s) displayTitle = `Batch ${s.batch} - ${s.name ? `Sec ${s.name}` : 'Entire Batch'}`;
     }
   }
 
   const UtilityContent = () => {
     if (utilityTab === 'none') return null;
-    const activeViewDay = utilityTab === 'today' ? (today as DayOfWeek) : selectedDay;
+    
+    const isMaster = utilityTab === 'master';
+    const activeViewDay = isMaster ? undefined : (utilityTab === 'today' ? (today as DayOfWeek) : selectedDay);
 
     return (
-      <div className="animate-in slide-in-from-top-4 fade-in duration-500 mb-8 p-1 bg-white/40 rounded-[40px] border border-gray-100 shadow-inner no-print backdrop-blur-sm">
-          <div className="bg-white/80 rounded-[38px] p-4 md:p-8 shadow-sm">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
-               <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-2xl ${utilityTab === 'today' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
-                        {utilityTab === 'today' ? <Clock className="w-6 h-6" /> : <Filter className="w-6 h-6" />}
+      <div className="animate-in slide-in-from-top-4 fade-in duration-500 mb-12 bg-white/95 backdrop-blur-xl rounded-[32px] border border-gray-200 p-6 md:p-8 no-print shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+               <div className="flex items-center gap-5">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${utilityTab === 'today' ? 'bg-blue-600 text-white' : utilityTab === 'master' ? 'bg-gray-900 text-white' : 'bg-purple-600 text-white'}`}>
+                        {utilityTab === 'today' ? <Clock className="w-5 h-5" /> : utilityTab === 'master' ? <LayoutGrid className="w-5 h-5" /> : <Filter className="w-5 h-5" />}
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900">{utilityTab === 'today' ? "Today's Status" : `Filtering ${activeViewDay}`}</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">{activeViewDay}</p>
+                        <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                          {utilityTab === 'today' ? "Today's Status" : utilityTab === 'master' ? "Department Master Routine" : `Schedule Search: ${activeViewDay}`}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-1">
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{isMaster ? "Full Weekly Distribution" : activeViewDay}</p>
+                        </div>
                     </div>
                </div>
                
                <div className="flex flex-wrap items-center gap-3">
                     {utilityTab === 'filter' && (
-                        <div className="flex flex-wrap items-center gap-1 bg-gray-50/80 p-1 rounded-full border border-gray-200 backdrop-blur-sm">
+                        <div className="flex flex-wrap items-center gap-1 bg-gray-100 p-1 rounded-full border border-gray-200">
                             {DAYS_ORDER.map(d => (
                                 <button 
                                     key={d} 
                                     onClick={() => setSelectedDay(d)}
-                                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${selectedDay === d ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all ${selectedDay === d ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     {d.substring(0,3)}
                                 </button>
@@ -115,137 +120,80 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                         </div>
                     )}
 
-                    <div className="flex bg-gray-100/80 p-1 rounded-full border border-gray-200 backdrop-blur-sm">
+                    <div className="flex bg-gray-100 p-1 rounded-full border border-gray-200">
                         <button 
                             onClick={() => setShowFreeRooms(false)}
-                            className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all ${!showFreeRooms ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}
+                            className={`px-6 py-2 rounded-full text-[10px] font-bold transition-all ${!showFreeRooms ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}
                         >
-                            Class View
+                            Routine
                         </button>
                         <button 
                             onClick={() => setShowFreeRooms(true)}
-                            className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all ${showFreeRooms ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-400'}`}
+                            className={`px-6 py-2 rounded-full text-[10px] font-bold transition-all ${showFreeRooms ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-400'}`}
                         >
-                            Free Room
+                            Free Rooms
                         </button>
                     </div>
                </div>
             </div>
             
-            <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/90 relative">
-                <div className="flex justify-between items-center px-4 py-3 bg-gray-50/50 border-b border-gray-100">
-                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                       <LayoutGrid className="w-3 h-3" /> Live Feed
+            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+                <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b border-gray-200">
+                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                       <Info className="w-3.5 h-3.5" /> Distribution Matrix
                    </span>
-                   <div className="flex gap-2">
-                        <button onClick={() => setIsFullScreen(true)} className="p-2 bg-white border border-gray-200 rounded-full text-gray-500 hover:text-blue-600 transition-all shadow-sm" title="Master View">
-                            <Maximize2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={handleExportPDF} className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 text-white rounded-full text-[10px] font-bold hover:bg-black transition-all">
-                            <Download className="w-3 h-3" /> <span className="hidden sm:inline">Export</span>
-                        </button>
-                   </div>
+                   {isMaster && (
+                     <button onClick={handleExportPDF} className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-full text-[10px] font-bold hover:bg-black transition-all shadow-md">
+                        <Download className="w-3.5 h-3.5" /> MASTER ROUTINE DOWNLOAD
+                     </button>
+                   )}
                 </div>
-                <ScheduleTable 
-                    data={data} 
-                    filterType="all" 
-                    specificDay={activeViewDay} 
-                    showFreeRooms={showFreeRooms}
-                />
+                <div className="overflow-x-auto custom-scrollbar">
+                  <ScheduleTable 
+                      data={data} 
+                      filterType="all" 
+                      specificDay={activeViewDay} 
+                      showFreeRooms={showFreeRooms}
+                  />
+                </div>
             </div>
-          </div>
       </div>
     );
   };
 
-  const FullScreenMaster = () => (
-      <div className={`fixed inset-0 z-[100] bg-[#FDFDF6] p-4 md:p-10 flex flex-col animate-in fade-in duration-300 ${isFullScreen ? 'block' : 'hidden'}`}>
-          <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
-              <div className="flex items-center gap-4">
-                <button onClick={() => setIsFullScreen(false)} className="p-3 bg-white border border-gray-200 rounded-2xl text-gray-500 hover:text-blue-600 transition-all shadow-sm">
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">Master Routine</h2>
-                    <p className="text-xs text-gray-500 uppercase font-black tracking-widest">{data.settings.semesterName}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                  <button onClick={handleExportPDF} className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-full text-sm font-bold shadow-lg hover:bg-black transition-all">
-                      <Download className="w-4 h-4" /> <span className="hidden sm:inline">Export Master PDF</span>
-                  </button>
-                  <button onClick={() => setIsFullScreen(false)} className="hidden md:flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">
-                      <Minimize2 className="w-4 h-4" /> Close
-                  </button>
-              </div>
-          </div>
-          <div className="flex-1 overflow-auto rounded-[40px] border border-gray-100 bg-white shadow-2xl p-4 md:p-6">
-             <ScheduleTable data={data} filterType="all" />
-          </div>
-      </div>
-  );
-
   return (
-    <div className="min-h-screen bg-[#FDFDF6] text-gray-900 font-sans selection:bg-blue-100 relative overflow-hidden pb-20">
-      <FullScreenMaster />
+    <div className="min-h-screen bg-[#fcfdfe] bg-grid text-gray-900 font-sans selection:bg-blue-100 relative overflow-hidden pb-24">
       
-      {/* --- Advanced Line Art Background --- */}
-      <div className="fixed inset-0 z-0 pointer-events-none no-print overflow-hidden">
-        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)', backgroundSize: '60px 60px', opacity: 0.15 }}></div>
-        <div className="absolute top-0 right-0 w-full h-full">
-            <svg className="absolute -top-10 -right-10 w-[600px] h-[600px] text-blue-500/10 animate-[float_20s_ease-in-out_infinite]" viewBox="0 0 200 200" fill="none" stroke="currentColor">
-                <circle cx="100" cy="100" r="80" strokeWidth="0.5" />
-                <circle cx="100" cy="100" r="50" strokeWidth="0.5" strokeDasharray="5 5" />
-                <path d="M100 20 L100 180" strokeWidth="0.25" />
-                <path d="M20 100 L180 100" strokeWidth="0.25" />
-                <circle cx="100" cy="20" r="3" fill="currentColor" fillOpacity="0.2" />
-                <circle cx="100" cy="180" r="3" fill="currentColor" fillOpacity="0.2" />
-                <circle cx="20" cy="100" r="3" fill="currentColor" fillOpacity="0.2" />
-                <circle cx="180" cy="100" r="3" fill="currentColor" fillOpacity="0.2" />
-                <path d="M43 43 L157 157" strokeWidth="0.25" />
-                <path d="M157 43 L43 157" strokeWidth="0.25" />
-            </svg>
-            <svg className="absolute -bottom-20 -left-20 w-[800px] h-[400px] text-indigo-500/5" viewBox="0 0 400 200" fill="none" stroke="currentColor">
-                <path d="M0 150 Q 100 50 200 150 T 400 150" strokeWidth="1" />
-                <path d="M0 160 Q 100 60 200 160 T 400 160" strokeWidth="0.5" />
-                <path d="M0 170 Q 100 70 200 170 T 400 170" strokeWidth="0.25" />
-                <line x1="50" y1="0" x2="50" y2="200" strokeWidth="0.1" />
-                <line x1="150" y1="0" x2="150" y2="200" strokeWidth="0.1" />
-                <line x1="250" y1="0" x2="250" y2="200" strokeWidth="0.1" />
-                <line x1="350" y1="0" x2="350" y2="200" strokeWidth="0.1" />
-            </svg>
-            <div className="absolute top-[20%] left-[10%] w-32 h-32 rounded-full border border-blue-200/20 animate-[pulse_10s_infinite]"></div>
-            <div className="absolute top-[60%] right-[15%] w-48 h-48 rounded-full border border-indigo-200/20 animate-[pulse_15s_infinite]"></div>
-        </div>
+      {/* --- Animated Background Blueprint Design --- */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] pointer-events-none no-print opacity-[0.08] translate-x-1/4 -translate-y-1/4">
+        <svg viewBox="0 0 100 100" className="w-full h-full animate-rotate-slow">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="#2563eb" strokeWidth="0.1" strokeDasharray="2,2" />
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#2563eb" strokeWidth="0.05" />
+            <circle cx="50" cy="50" r="30" fill="none" stroke="#2563eb" strokeWidth="0.1" strokeDasharray="1,1" />
+            <line x1="50" y1="0" x2="50" y2="100" stroke="#2563eb" strokeWidth="0.05" />
+            <line x1="0" y1="50" x2="100" y2="50" stroke="#2563eb" strokeWidth="0.05" />
+            <path d="M50 50 L85 15" stroke="#2563eb" strokeWidth="0.1" />
+            <circle cx="85" cy="15" r="1.5" fill="#2563eb" />
+        </svg>
       </div>
 
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          33% { transform: translate(20px, -20px) rotate(2deg); }
-          66% { transform: translate(-10px, 10px) rotate(-1deg); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.3; transform: scale(1.1); }
-        }
-      `}</style>
-
-      <header className="sticky top-0 z-30 bg-[#FDFDF6]/70 backdrop-blur-lg border-b border-gray-100 no-print">
+      <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-gray-100 no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
+             <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                <Calendar className="w-5 h-5" />
              </div>
-             <span className="text-xl font-medium text-gray-800 tracking-tight hidden sm:inline">Routine Master</span>
+             <span className="text-lg font-bold text-[#1e293b] tracking-tight">Routine Master</span>
           </div>
-          <div className="flex items-center gap-3">
-              <button onClick={() => setIsFullScreen(true)} className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all">
+          <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setUtilityTab(utilityTab === 'master' ? 'today' : 'master')} 
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all ${utilityTab === 'master' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-blue-600'}`}
+              >
                 <LayoutGrid className="w-4 h-4" />
-                Master Routine
+                <span className="hidden sm:inline">Master Routine</span>
               </button>
-              <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></div>
-              <button onClick={onAdminClick} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-all">
+              <button onClick={onAdminClick} className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-gray-500 hover:text-blue-600 transition-all">
                 <ShieldCheck className="w-4 h-4" />
                 <span className="hidden sm:inline">Admin Access</span>
               </button>
@@ -254,192 +202,148 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
       </header>
 
       {!data.settings.isPublished ? (
-          <main className="max-w-7xl mx-auto px-4 py-20 text-center relative z-10">
-               <div className="inline-flex items-center justify-center w-24 h-24 bg-yellow-100 text-yellow-600 rounded-full mb-6 animate-bounce">
+          <main className="max-w-7xl mx-auto px-4 py-32 text-center relative z-10">
+               <div className="inline-flex items-center justify-center w-24 h-24 bg-yellow-50 text-yellow-600 border border-yellow-100 rounded-[32px] mb-8">
                    <AlertTriangle className="w-10 h-10" />
                </div>
-               <h1 className="text-3xl font-bold text-gray-900 mb-4">Routine System Updating</h1>
-               <p className="text-gray-500 max-w-md mx-auto">Please check back later for the finalized schedule for the {data.settings.semesterName} semester.</p>
+               <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">System Updating</h1>
+               <p className="text-gray-500 max-w-lg mx-auto text-lg leading-relaxed">The CIS academic office is currently syncing the {data.settings.semesterName} schedule.</p>
           </main>
       ) : (
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 relative z-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 relative z-10">
         
-        <div className="text-center mb-12 animate-in slide-in-from-bottom-4 fade-in duration-700 no-print">
-          <div className="inline-block mb-4 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-600 text-[10px] font-black tracking-[0.2em] uppercase shadow-sm">
-            {data.settings.semesterName} Schedule
+        {/* --- Hero Section Refined to Match Design Image --- */}
+        <div className="text-center mb-16 animate-in slide-in-from-bottom-8 fade-in duration-1000 no-print">
+          <div className="inline-block mb-6 px-5 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold tracking-widest uppercase border border-blue-100">
+            {data.settings.semesterName.toUpperCase()} SCHEDULE
           </div>
-          <h1 className="text-4xl md:text-7xl font-light text-gray-900 mb-6 tracking-tight">
-            CIS <span className="text-blue-600 font-medium italic relative">
-              Schedule
-              <span className="absolute -bottom-2 left-0 w-full h-1.5 bg-blue-500/10 rounded-full"></span>
-            </span>
+          
+          <h1 className="text-[56px] md:text-[84px] font-bold text-[#1e293b] mb-4 tracking-tighter leading-tight">
+            CIS <span className="text-blue-600 italic">Schedule</span>
           </h1>
-          <div className="flex flex-col items-center gap-4">
-            <p className="text-gray-500 text-sm md:text-lg max-w-2xl mx-auto leading-relaxed px-4">
-              Academic resource distribution and weekly scheduling for DIU CIS Department.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-                <div className="flex items-center gap-2 px-5 py-2 bg-white/50 backdrop-blur-sm rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest border border-gray-200 shadow-sm">
-                    <Clock className="w-3.5 h-3.5 text-blue-500" /> {fullCurrentDate}
-                </div>
-                <div className="flex items-center gap-2 px-5 py-2 bg-white/50 backdrop-blur-sm rounded-full text-[10px] font-bold text-gray-400 uppercase tracking-widest border border-gray-100 shadow-sm">
-                    <Info className="w-3.5 h-3.5 text-gray-400" /> Last Updated: {data.lastModified || 'Just now'}
-                </div>
-            </div>
+          
+          <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10 font-medium">
+            Academic resource distribution and weekly scheduling for DIU CIS Department.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
+              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-full text-[11px] font-bold text-gray-500 uppercase tracking-widest shadow-sm">
+                  <Clock className="w-4 h-4 text-blue-500" /> {fullCurrentDate}
+              </div>
+              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-full text-[11px] font-bold text-gray-400 uppercase tracking-widest shadow-sm">
+                  <Info className="w-4 h-4 text-gray-300" /> LAST UPDATED: {data.lastModified?.toUpperCase() || 'READY'}
+              </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 px-4">
+              <button 
+                  onClick={() => setUtilityTab('today')}
+                  className="w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 bg-blue-600 text-white rounded-[24px] text-base font-bold transition-all hover:bg-blue-700 hover:scale-105 shadow-2xl shadow-blue-500/20"
+              >
+                  <Clock className="w-5 h-5" /> Quick Today
+              </button>
+              <button 
+                  onClick={() => setUtilityTab('filter')}
+                  className="w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 bg-white text-[#1e293b] border border-gray-200 rounded-[24px] text-base font-bold transition-all hover:border-blue-400 hover:scale-105 shadow-sm"
+              >
+                  <Filter className="w-5 h-5" /> Search By Day
+              </button>
           </div>
         </div>
 
-        {/* --- Utility Dashboard --- */}
-        <div className="max-w-5xl mx-auto mb-16 no-print">
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-8 px-4">
-                <button 
-                    onClick={() => setUtilityTab('today')}
-                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-bold transition-all border ${utilityTab === 'today' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-500/20 scale-105' : 'bg-white/70 backdrop-blur-sm text-gray-600 border-gray-200 hover:border-blue-400'}`}
-                >
-                    <Clock className="w-4 h-4" /> Quick Today
-                </button>
-                <button 
-                    onClick={() => setUtilityTab('filter')}
-                    className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-bold transition-all border ${utilityTab === 'filter' ? 'bg-purple-600 text-white border-purple-600 shadow-xl shadow-purple-500/20 scale-105' : 'bg-white/70 backdrop-blur-sm text-gray-600 border-gray-200 hover:border-purple-400'}`}
-                >
-                    <Filter className="w-4 h-4" /> Search By Day
-                </button>
-            </div>
+        <div className="max-w-4xl mx-auto mb-16 no-print">
             <UtilityContent />
         </div>
 
-        {/* --- Selection Logic --- */}
-        <div className="no-print border-t border-gray-100/50 pt-16">
+        {/* --- Profile Selector UI --- */}
+        <div className="no-print border-t border-gray-100 pt-16">
           <div className="flex justify-center mb-10">
-            <div className="bg-white/40 backdrop-blur-md p-1.5 rounded-[22px] inline-flex relative shadow-sm border border-gray-100">
+            <div className="bg-gray-100 p-1.5 rounded-full inline-flex border border-gray-200">
               <button
                 onClick={() => { setViewMode('student'); setSelectedId(''); }}
-                className={`px-8 py-3 rounded-[18px] text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'student' ? 'text-gray-900 bg-white shadow-sm ring-1 ring-gray-100' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`px-10 py-3 rounded-full text-xs font-bold transition-all flex items-center gap-3 ${viewMode === 'student' ? 'text-gray-900 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                <Users className="w-4 h-4" /> Student
+                <Users className="w-4 h-4" /> Student Profile
               </button>
               <button
                 onClick={() => { setViewMode('teacher'); setSelectedId(''); }}
-                className={`px-8 py-3 rounded-[18px] text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'teacher' ? 'text-gray-900 bg-white shadow-sm ring-1 ring-gray-100' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`px-10 py-3 rounded-full text-xs font-bold transition-all flex items-center gap-3 ${viewMode === 'teacher' ? 'text-gray-900 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                <GraduationCap className="w-4 h-4" /> Teacher
+                <GraduationCap className="w-4 h-4" /> Faculty Hub
               </button>
             </div>
           </div>
 
           <div className="max-w-xl mx-auto mb-24 relative px-4">
             <div className="relative group">
-                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 text-gray-400 group-hover:text-blue-500 transition-colors pointer-events-none">
-                    {viewMode === 'student' ? <Layers className="w-6 h-6" /> : <User className="w-6 h-6" />}
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                    {viewMode === 'student' ? <Layers className="w-5 h-5" /> : <User className="w-5 h-5" />}
                 </div>
                 <select
                 value={selectedId}
                 onChange={(e) => setSelectedId(e.target.value)}
-                className="block w-full h-20 pl-16 pr-16 text-lg bg-white/60 backdrop-blur-md border border-gray-200 rounded-[30px] appearance-none focus:outline-none focus:ring-8 focus:ring-blue-500/5 focus:border-blue-500 transition-all cursor-pointer shadow-sm hover:border-blue-300 hover:bg-white/80"
+                className="block w-full h-16 pl-14 pr-12 text-lg font-bold bg-white/90 backdrop-blur-xl border border-gray-200 rounded-[24px] appearance-none focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer hover:border-gray-300 shadow-sm"
                 >
-                <option value="" disabled hidden>Select your {viewMode === 'student' ? 'Section' : 'Faculty Member'} Profile</option>
+                <option value="" disabled hidden>Select {viewMode === 'student' ? 'Batch/Section' : 'Faculty Name'}</option>
                 {viewMode === 'student' ? (
                     Object.entries(sectionsByBatch).map(([batch, sections]) => (
                     <optgroup key={batch} label={`📅 Batch ${batch}`}>
-                        <option value={`batch-${batch}`}>All Sections (Batch {batch})</option>
-                        {(sections as Section[]).map(s => <option key={s.id} value={s.id}>{s.name ? `Section ${s.name}` : `Full Batch ${s.batch}`}</option>)}
+                        <option value={`batch-${batch}`}>👥 Entire Batch {batch}</option>
+                        {(sections as Section[]).map(s => <option key={s.id} value={s.id}>📍 Section {s.name ? s.name : 'Core'} (Batch {s.batch})</option>)}
                     </optgroup>
                     ))
                 ) : (
                     data.teachers.map(t => <option key={t.id} value={t.id}>🎓 {t.name} ({t.initial})</option>)
                 )}
                 </select>
-                <div className="absolute right-8 top-7 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">
+                <div className="absolute right-6 top-5 flex items-center pointer-events-none text-gray-400">
                     <ChevronDown className="w-6 h-6" />
                 </div>
             </div>
           </div>
         </div>
 
-        {/* --- Result Display --- */}
+        {/* --- Result Table --- */}
         <div ref={routineRef} className="scroll-mt-24 px-2 md:px-0">
           {selectedId ? (
-            <div className="bg-white/80 backdrop-blur-md rounded-[48px] shadow-2xl shadow-blue-900/5 border border-white p-6 md:p-14 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="bg-white border border-gray-100 rounded-[40px] p-6 md:p-14 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-xl shadow-blue-900/5">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-8">
-                <div>
-                    <div className="flex items-center gap-2 mb-3">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                        <p className="text-[10px] text-blue-600 font-black uppercase tracking-[0.3em]">Official CIS Routine</p>
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-blue-600 rounded-sm"></div>
+                        <p className="text-[10px] text-blue-600 font-bold uppercase tracking-[0.4em]">Official CIS Schedule</p>
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight leading-tight">{displayTitle}</h2>
+                    <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter leading-none">{displayTitle}</h2>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 no-print">
-                   <button onClick={() => setIsFullScreen(true)} className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-full text-sm font-bold shadow-sm hover:bg-gray-50 transition-all">
-                        <LayoutGrid className="w-4 h-4" /> Master View
-                   </button>
-                   <button onClick={handleExportPDF} className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-full text-sm font-bold shadow-xl hover:bg-black transition-all hover:-translate-y-1">
-                        <Download className="w-4 h-4" /> Export Schedule
+                <div className="flex flex-wrap items-center gap-4 no-print">
+                   <button onClick={handleExportPDF} className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-10 py-3.5 bg-gray-900 text-white rounded-full text-sm font-bold hover:bg-black transition-all shadow-lg shadow-gray-200">
+                        <Download className="w-4 h-4" /> SAVE PDF
                    </button>
                 </div>
               </div>
               
-              <div className="overflow-hidden rounded-[32px] border border-gray-100 shadow-inner bg-white/50 backdrop-blur-sm">
+              <div className="rounded-[24px] border border-gray-100 overflow-hidden shadow-inner bg-gray-50/50 overflow-x-auto custom-scrollbar">
                 <ScheduleTable data={data} filterType={filterType} filterId={filterValue} />
               </div>
-
-              {viewMode === 'teacher' && (
-                  <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                       {(() => {
-                           const t = data.teachers.find(tr => tr.id === selectedId);
-                           if(!t) return null;
-                           return (
-                               <>
-                                  <div className="p-8 bg-white/60 backdrop-blur-sm rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl hover:bg-white transition-all">
-                                    <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center mb-5 shadow-inner">
-                                      <Calendar className="w-6 h-6" />
-                                    </div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Weekly Off-Days</p>
-                                    <p className="text-lg font-bold text-gray-800">{t.offDays?.length ? t.offDays.join(', ') : 'None'}</p>
-                                  </div>
-                                  <div className="p-8 bg-white/60 backdrop-blur-sm rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl hover:bg-white transition-all">
-                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-5 shadow-inner">
-                                      <Clock className="w-6 h-6" />
-                                    </div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Counseling</p>
-                                    <p className="text-lg font-bold text-gray-800">{t.counselingHour || 'Schedule Pending'}</p>
-                                  </div>
-                                  <div className="p-8 bg-white/60 backdrop-blur-sm rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl hover:bg-white transition-all lg:col-span-2">
-                                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-inner">
-                                      <Mail className="w-6 h-6" />
-                                    </div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Faculty Email</p>
-                                    <p className="text-lg font-bold text-emerald-700 break-all">{t.email}</p>
-                                  </div>
-                               </>
-                           )
-                       })()}
-                  </div>
-              )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-28 animate-in fade-in duration-1000 no-print">
-              <div className="relative mb-8">
-                  <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-3xl scale-150"></div>
-                  <div className="relative w-32 h-32 bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white shadow-xl">
-                    <Search className="w-10 h-10 text-gray-200" />
-                  </div>
+            <div className="flex flex-col items-center justify-center py-32 animate-in fade-in duration-1000 no-print">
+              <div className="w-24 h-24 bg-white border border-gray-100 rounded-full flex items-center justify-center mb-8 shadow-sm">
+                <Search className="w-8 h-8 text-gray-100" />
               </div>
-              <h3 className="text-sm font-bold text-gray-400 text-center uppercase tracking-[0.4em] opacity-80">Make a Selection to View Schedule</h3>
+              <h3 className="text-[10px] font-bold text-gray-200 text-center uppercase tracking-[0.5em]">Awaiting selection to display routine</h3>
             </div>
           )}
         </div>
       </main>
       )}
 
-      <footer className="mt-auto py-16 text-center border-t border-gray-100/30 bg-white/10 backdrop-blur-md no-print relative z-10 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/20 to-transparent"></div>
-        <div className="flex justify-center gap-6 mb-8">
-             <div className="h-1.5 w-12 bg-blue-500/40 rounded-full"></div>
-             <div className="h-1.5 w-12 bg-purple-500/40 rounded-full"></div>
-             <div className="h-1.5 w-12 bg-emerald-500/40 rounded-full"></div>
-        </div>
-        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.4em]">
-            DIU CIS Department &copy; {new Date().getFullYear()} • Dynamic Scheduling System
+      <footer className="mt-auto py-20 text-center border-t border-gray-100 bg-white/30 backdrop-blur-sm no-print relative z-10">
+        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.5em] mb-4">
+            DAFFODIL INTERNATIONAL UNIVERSITY &bull; CIS DEPARTMENT
+        </p>
+        <p className="text-[9px] text-gray-300 uppercase tracking-[0.2em]">
+            &copy; {new Date().getFullYear()} DIU Routine Board v2.8 Design Refresh
         </p>
       </footer>
     </div>

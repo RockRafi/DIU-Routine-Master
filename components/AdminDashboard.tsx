@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, Room, Teacher, Course, Section } from '../types';
 import ScheduleGrid from './ScheduleGrid';
 import ClassModal from './ClassModal';
-import { checkConflict, formatDate } from '../services/dbService';
-import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download, ChevronDown, Check, X, Phone, Edit3, Clock, Menu as MenuIcon } from 'lucide-react';
+import { formatDate, checkConflict } from '../services/dbService';
+import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, ChevronDown, Check, X, Edit3, Clock, Menu as MenuIcon } from 'lucide-react';
 
-// --- Sub-Components Defined Outside ---
+// --- Sub-Components ---
 
 const SelectField = ({ label, value, onChange, options }: any) => (
   <div className="relative group">
@@ -428,10 +428,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             </div>
             <div className="flex items-center gap-4 flex-wrap w-full md:w-auto">
                <button onClick={() => window.print()} className="flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors">
-                 <Printer className="w-4 h-4" /> Download
+                 <Printer className="w-4 h-4" /> Print View
                </button>
                <button onClick={() => handleOpenModal()} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200">
-                 <Plus className="w-4 h-4" /> Schedule Session
+                 <Plus className="w-4 h-4" /> New Session
                </button>
             </div>
         </div>
@@ -562,54 +562,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
     <div className="min-h-screen bg-[#FDFDF6] flex flex-col md:flex-row font-sans relative overflow-x-hidden">
       <ClassModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveSession} data={data} initialDay={modalInitialDay} initialTime={modalInitialTime} sessionToEdit={sessionToEdit} />
       
+      {/* Mobile Menu Toggle */}
+      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-100 no-print sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
+            <LayoutDashboard className="w-4 h-4" />
+          </div>
+          <h1 className="text-lg font-bold text-gray-900">Admin</h1>
+        </div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Navigation Overlay (Mobile) */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
-      <header className="md:hidden sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b border-gray-100 px-6 py-4 flex items-center justify-between no-print">
-        <div className="flex items-center gap-3">
+      <aside className={`
+        fixed md:sticky top-0 inset-y-0 left-0 w-72 bg-white z-50 p-6 border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out no-print
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="flex items-center gap-3 mb-10 pl-2">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
                 <LayoutDashboard className="w-5 h-5" />
             </div>
             <div>
-                <h1 className="text-lg font-bold text-gray-900">Admin</h1>
+                <h1 className="text-xl font-bold text-gray-900">Admin Console</h1>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">CIS Workspace</p>
             </div>
         </div>
-        <button 
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <MenuIcon className="w-6 h-6" />
-        </button>
-      </header>
 
-      <aside className={`
-        fixed inset-y-0 left-0 w-72 bg-white z-40 p-6 border-r border-gray-100 flex flex-col shadow-xl 
-        md:sticky md:top-0 md:h-screen md:w-80 md:shadow-sm md:translate-x-0 transition-transform duration-300 ease-in-out no-print
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="flex items-center justify-between mb-10 pl-2">
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
-                    <LayoutDashboard className="w-5 h-5" />
-                </div>
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900">Admin Console</h1>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">CIS Workspace</p>
-                </div>
-            </div>
-            <button 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="md:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-        </div>
-
-        <nav className="flex-1 space-y-2 overflow-y-auto">
+        <nav className="flex-1 space-y-1">
           <NavItem id="schedule" label="Board" icon={Calendar} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
           <NavItem id="teachers" label="Teachers" icon={GraduationCap} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
           <NavItem id="courses" label="Courses" icon={BookOpen} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
@@ -628,22 +619,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         </div>
       </aside>
 
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto w-full relative">
-        <div className="absolute top-0 right-0 w-full h-96 -z-10 opacity-30 pointer-events-none no-print">
-            <svg className="w-full h-full text-blue-100" viewBox="0 0 1000 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 50C150 20 300 80 450 50C600 20 750 80 900 50V400H0V50Z" fill="currentColor" fillOpacity="0.3"/>
-                <path d="M0 150C200 120 400 180 600 150C800 120 1000 180 1200 150V400H0V150Z" fill="currentColor" fillOpacity="0.2"/>
-                <circle cx="850" cy="100" r="150" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" strokeDasharray="10 10"/>
-                <line x1="0" y1="200" x2="1000" y2="200" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
-            </svg>
-        </div>
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto">
+        <div className="max-w-7xl mx-auto space-y-8 relative">
+            {/* Background Accent */}
+            <div className="absolute top-0 right-0 w-full h-96 -z-10 opacity-30 pointer-events-none no-print">
+                <svg className="w-full h-full text-blue-100" viewBox="0 0 1000 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 50C150 20 300 80 450 50C600 20 750 80 900 50V400H0V50Z" fill="currentColor" fillOpacity="0.3"/>
+                    <path d="M0 150C200 120 400 180 600 150C800 120 1000 180 1200 150V400H0V150Z" fill="currentColor" fillOpacity="0.2"/>
+                    <circle cx="850" cy="100" r="150" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" strokeDasharray="10 10"/>
+                    <line x1="0" y1="200" x2="1000" y2="200" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
+                </svg>
+            </div>
 
-        {activeTab === 'schedule' && renderScheduler()}
-        {activeTab === 'teachers' && renderTeacherManager()}
-        {activeTab === 'courses' && renderCourseManager()}
-        {activeTab === 'rooms' && renderRoomManager()}
-        {activeTab === 'sections' && renderSectionManager()}
-        {activeTab === 'settings' && renderSettings()}
+            {activeTab === 'schedule' && renderScheduler()}
+            {activeTab === 'teachers' && renderTeacherManager()}
+            {activeTab === 'courses' && renderCourseManager()}
+            {activeTab === 'rooms' && renderRoomManager()}
+            {activeTab === 'sections' && renderSectionManager()}
+            {activeTab === 'settings' && renderSettings()}
+        </div>
       </main>
     </div>
   );
