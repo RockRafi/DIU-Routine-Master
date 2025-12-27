@@ -13,7 +13,8 @@ const getAIClient = () => {
 export const generateSampleDataWithAI = async (): Promise<AppData | null> => {
   try {
     const ai = getAIClient();
-    const model = "gemini-2.5-flash";
+    // // Using gemini-3-pro-preview as generating a conflict-free class schedule is a complex logic task.
+    const model = 'gemini-3-pro-preview';
     
     const prompt = `
       Generate realistic sample data for a university class routine system (Computer Science department).
@@ -70,7 +71,7 @@ export const generateSampleDataWithAI = async (): Promise<AppData | null> => {
                   id: { type: Type.STRING },
                   roomNumber: { type: Type.STRING },
                   capacity: { type: Type.NUMBER },
-                  type: Type.STRING, // Enum validation handled by logic if needed, simplify for schema
+                  type: { type: Type.STRING }, // Enum validation handled by logic if needed, simplify for schema
                 }
               }
             },
