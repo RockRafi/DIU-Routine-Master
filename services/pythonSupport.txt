@@ -1,0 +1,47 @@
+# Python Logic Reference for CIS Routine System
+# This file provides the algorithmic implementation of the schedule logic for server-side support.
+
+from dataclasses import dataclass
+from typing import List, Optional
+import uuid
+
+@dataclass
+class Session:
+    id: str
+    day: str
+    start_time: str
+    end_time: str
+    room_id: str
+    teacher_id: str
+    section_id: str
+
+def get_free_rooms(all_rooms: List[dict], schedule: List[Session], target_day: str, target_slot: str) -> List[dict]:
+    """
+    Simultaneously calculates available rooms for a given slot.
+    Returns a list of room objects that are NOT in the schedule for that day/time.
+    """
+    occupied_room_ids = {
+        s.room_id for s in schedule 
+        if s.day == target_day and s.start_time == target_slot
+    }
+    
+    return [r for r in all_rooms if r['id'] not in occupied_room_ids]
+
+def check_conflicts(new_session: Session, existing_schedule: List[Session]) -> Optional[str]:
+    """
+    Validates a new session against common DIU CIS constraints.
+    """
+    for s in existing_schedule:
+        if s.day == new_session.day and s.start_time == new_session.start_time:
+            if s.teacher_id == new_session.teacher_id:
+                return f"Teacher {s.teacher_id} is already busy."
+            if s.room_id == new_session.room_id:
+                return f"Room {s.room_id} is occupied."
+            if s.section_id == new_session.section_id:
+                return f"Batch/Section {s.section_id} already has a class."
+    return None
+
+# Sample Python Usage Mirroring React Service
+# schedule = [Session(str(uuid.uuid4()), "Sunday", "08:30", "10:00", "R1", "T1", "S1")]
+# free = get_free_rooms([{'id': 'R1'}, {'id': 'R2'}], schedule, "Sunday", "08:30")
+# print(f"Available: {free}") # Output: Available: [{'id': 'R2'}]

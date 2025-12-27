@@ -426,7 +426,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             </div>
             <div className="flex items-center gap-4 flex-wrap w-full md:w-auto">
                <button onClick={() => window.print()} className="flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors">
-                 <Printer className="w-4 h-4" /> Print Master
+                 <Printer className="w-4 h-4" /> Download
                </button>
                <button onClick={() => handleOpenModal()} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200">
                  <Plus className="w-4 h-4" /> Schedule Session
@@ -559,7 +559,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
     <div className="min-h-screen bg-[#FDFDF6] flex flex-col md:flex-row font-sans relative overflow-x-hidden">
       <ClassModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveSession} data={data} initialDay={modalInitialDay} initialTime={modalInitialTime} sessionToEdit={sessionToEdit} />
       
-      {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden transition-opacity duration-300"
@@ -567,7 +566,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         />
       )}
 
-      {/* Mobile Top Header */}
       <header className="md:hidden sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b border-gray-100 px-6 py-4 flex items-center justify-between no-print">
         <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
@@ -585,7 +583,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         </button>
       </header>
 
-      {/* Navigation Sidebar/Drawer */}
       <aside className={`
         fixed inset-y-0 left-0 w-72 bg-white z-40 p-6 border-r border-gray-100 flex flex-col shadow-xl 
         md:sticky md:top-0 md:h-screen md:w-80 md:shadow-sm md:translate-x-0 transition-transform duration-300 ease-in-out no-print
@@ -628,17 +625,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto w-full relative">
-        {/* Subtle background pattern for creativity */}
         <div className="absolute top-0 right-0 w-full h-96 -z-10 opacity-30 pointer-events-none no-print">
             <svg className="w-full h-full text-blue-100" viewBox="0 0 1000 400" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M0 50C150 20 300 80 450 50C600 20 750 80 900 50V400H0V50Z" fill="currentColor" fillOpacity="0.3"/>
                 <path d="M0 150C200 120 400 180 600 150C800 120 1000 180 1200 150V400H0V150Z" fill="currentColor" fillOpacity="0.2"/>
                 <circle cx="850" cy="100" r="150" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" strokeDasharray="10 10"/>
                 <line x1="0" y1="200" x2="1000" y2="200" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
-                <line x1="0" y1="250" x2="1000" y2="250" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
-                <line x1="0" y1="300" x2="1000" y2="300" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
             </svg>
         </div>
 
