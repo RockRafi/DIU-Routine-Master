@@ -3,7 +3,7 @@ export interface Teacher {
   name: string;
   initial: string;
   email: string;
-  phone?: string; // Added phone number
+  phone?: string; 
   offDays: string[]; 
   counselingHour?: string;
 }
@@ -23,7 +23,7 @@ export interface Room {
 
 export interface Section {
   id: string;
-  name: string; // e.g., "A", "B", or "" for whole batch
+  name: string; 
   batch: number;
   studentCount: number; 
 }
@@ -40,21 +40,21 @@ export enum DayOfWeek {
 
 export interface ClassSession {
   id: string;
-  courseId: string;
+  courseId?: string; 
   teacherId: string;
-  roomId: string;
-  sectionId: string;
+  roomId?: string;   
+  sectionId?: string; 
   day: DayOfWeek;
-  startTime: string; // "08:30 AM"
-  endTime: string;   // "10:00 AM"
+  startTime: string; 
+  endTime: string;   
+  counselingHour?: string; 
 }
 
 export interface AppSettings {
-  semesterName: string; // e.g., "Fall 2025"
+  semesterName: string; 
   isPublished: boolean;
 }
 
-// Data structure for the entire application state
 export interface AppData {
   settings: AppSettings;
   teachers: Teacher[];
@@ -62,7 +62,7 @@ export interface AppData {
   rooms: Room[];
   sections: Section[];
   schedule: ClassSession[];
-  lastModified?: string; // Added last modified date
+  lastModified?: string; 
 }
 
 export const TIME_SLOTS = [
@@ -74,7 +74,6 @@ export const TIME_SLOTS = [
   "04:00 PM - 05:30 PM"
 ];
 
-// Enhanced pastel colors for batches
 export const getBatchColor = (batch: number) => {
   const colors = [
     'bg-blue-100 text-blue-900 border-blue-200',

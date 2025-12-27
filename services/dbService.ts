@@ -107,23 +107,28 @@ export const checkConflict = (
   );
 
   for (const session of overlappingSessions) {
+    // Teacher conflict is always checked
     if (session.teacherId === newSession.teacherId) {
       return { 
         hasConflict: true, 
-        message: `${getNameById(session.teacherId, 'teachers', data)} is already busy in ${getNameById(session.roomId, 'rooms', data)}.` 
+        message: `${getNameById(session.teacherId, 'teachers', data)} is already busy with a ${session.counselingHour ? 'Counseling Hour' : 'Class'}.` 
       };
     }
-    if (session.roomId === newSession.roomId) {
-      return { 
-        hasConflict: true, 
-        message: `Room ${getNameById(session.roomId, 'rooms', data)} is already occupied.` 
-      };
-    }
-    if (session.sectionId === newSession.sectionId) {
-      return { 
-        hasConflict: true, 
-        message: `Section ${getNameById(session.sectionId, 'sections', data)} already has a class.` 
-      };
+
+    // Only check room and section conflicts if the new session is NOT a counseling hour
+    if (!newSession.counselingHour) {
+      if (session.roomId && session.roomId === newSession.roomId) {
+        return { 
+          hasConflict: true, 
+          message: `Room ${getNameById(session.roomId, 'rooms', data)} is already occupied.` 
+        };
+      }
+      if (session.sectionId && session.sectionId === newSession.sectionId) {
+        return { 
+          hasConflict: true, 
+          message: `Section ${getNameById(session.sectionId, 'sections', data)} already has a class.` 
+        };
+      }
     }
   }
 

@@ -89,11 +89,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
 
                       <div className="space-y-2 relative z-10">
                         {sessions.map(session => {
-                          const course = data.courses.find(c => c.id === session.courseId);
+                          const course = session.courseId ? data.courses.find(c => c.id === session.courseId) : null;
                           const teacher = data.teachers.find(t => t.id === session.teacherId);
-                          const room = data.rooms.find(r => r.id === session.roomId);
-                          const section = data.sections.find(s => s.id === session.sectionId);
-                          const batchColor = section ? getBatchColor(section.batch) : 'bg-gray-100 text-gray-800';
+                          const room = session.roomId ? data.rooms.find(r => r.id === session.roomId) : null;
+                          const section = session.sectionId ? data.sections.find(s => s.id === session.sectionId) : null;
+                          const batchColor = section ? getBatchColor(section.batch) : 'bg-blue-100 text-blue-800';
 
                           return (
                             <div 
@@ -115,12 +115,14 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                                 <Plus className="w-3 h-3 rotate-45" />
                               </button>
                               <div className="font-bold flex justify-between pointer-events-none">
-                                <span>{course?.code}</span>
-                                <span>{room?.roomNumber}</span>
+                                <span>{course?.code || (session.counselingHour ? 'COUNSEL' : 'N/A')}</span>
+                                <span>{room?.roomNumber || ''}</span>
                               </div>
-                              <div className="truncate my-0.5 opacity-90 pointer-events-none">{teacher?.initial}</div>
+                              <div className="truncate my-0.5 opacity-90 pointer-events-none">
+                                {teacher?.initial} {session.counselingHour ? '🤝' : ''}
+                              </div>
                               <div className="font-medium mt-1 inline-block px-1.5 py-0.5 bg-white/50 rounded shadow-sm pointer-events-none">
-                                {section?.name ? `B-${section.batch} (${section.name})` : `Batch ${section?.batch}`}
+                                {section?.name ? `B-${section.batch} (${section.name})` : (section ? `Batch ${section.batch}` : 'Counseling')}
                               </div>
                             </div>
                           );

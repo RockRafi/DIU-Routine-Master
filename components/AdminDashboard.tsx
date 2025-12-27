@@ -3,7 +3,7 @@ import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, Room, Teacher, Course, Se
 import ScheduleGrid from './ScheduleGrid';
 import ClassModal from './ClassModal';
 import { checkConflict, formatDate } from '../services/dbService';
-import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download, ChevronDown, Check, X, Phone } from 'lucide-react';
+import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download, ChevronDown, Check, X, Phone, Edit3, Clock, Menu as MenuIcon } from 'lucide-react';
 
 // --- Sub-Components Defined Outside ---
 
@@ -96,9 +96,9 @@ const InputField = ({ label, value, onChange, type = "text", placeholder = " " }
   </div>
 );
 
-const NavItem = ({ id, label, icon: Icon, activeTab, setActiveTab, setErrorMsg }: any) => (
+const NavItem = ({ id, label, icon: Icon, activeTab, setActiveTab, setErrorMsg, onClose }: any) => (
   <button
-    onClick={() => { setActiveTab(id); setErrorMsg(null); }}
+    onClick={() => { setActiveTab(id); setErrorMsg(null); if(onClose) onClose(); }}
     className={`w-full flex items-center gap-3 px-6 py-3.5 rounded-full font-medium transition-all duration-200 mb-1 ${
       activeTab === id 
         ? 'bg-blue-100/80 text-blue-900 shadow-sm' 
@@ -110,7 +110,7 @@ const NavItem = ({ id, label, icon: Icon, activeTab, setActiveTab, setErrorMsg }
   </button>
 );
 
-const DataTable = ({ items, fields, onDelete, emptyMessage = "No records found." }: any) => (
+const DataTable = ({ items, fields, onDelete, onEdit, emptyMessage = "No records found." }: any) => (
   <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
       <div className="px-8 py-6 bg-white border-b border-gray-100 flex justify-between items-center">
           <div>
@@ -147,9 +147,14 @@ const DataTable = ({ items, fields, onDelete, emptyMessage = "No records found."
                   </td>
                 ))}
                 <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
-                  <button onClick={() => onDelete(item.id)} className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => onEdit(item)} className="p-2 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => onDelete(item.id)} className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -180,38 +185,43 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'schedule' | 'teachers' | 'courses' | 'rooms' | 'sections' | 'settings'>('schedule');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionToEdit, setSessionToEdit] = useState<ClassSession | undefined>(undefined);
   const [modalInitialDay, setModalInitialDay] = useState<DayOfWeek>(DayOfWeek.Sunday);
   const [modalInitialTime, setModalInitialTime] = useState<string>(TIME_SLOTS[0]);
 
+  // Editing IDs
+  const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+
+  // Form States
   const [newRoomNumber, setNewRoomNumber] = useState('');
   const [newRoomType, setNewRoomType] = useState<'Theory' | 'Lab'>('Theory');
-
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherInitial, setNewTeacherInitial] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [newTeacherPhone, setNewTeacherPhone] = useState('');
   const [newTeacherOffDays, setNewTeacherOffDays] = useState<string[]>([]);
-  const [newTeacherCounselingDay, setNewTeacherCounselingDay] = useState('');
-  const [newTeacherCounselingTime, setNewTeacherCounselingTime] = useState('');
-  const [newTeacherCounselingNone, setNewTeacherCounselingNone] = useState(false);
-
   const [newCourseCode, setNewCourseCode] = useState('');
   const [newCourseName, setNewCourseName] = useState('');
   const [newCourseCredits, setNewCourseCredits] = useState('');
-
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionBatch, setNewSectionBatch] = useState('');
   const [newSectionStudents, setNewSectionStudents] = useState('');
-
+  
+  // Settings local state
   const [semesterName, setSemesterName] = useState(data.settings.semesterName);
+  const [localIsPublished, setLocalIsPublished] = useState(data.settings.isPublished);
 
   const handleOpenModal = (day?: DayOfWeek, time?: string) => {
     setSessionToEdit(undefined); 
     if (day) setModalInitialDay(day);
     if (time) setModalInitialTime(time);
+    else setModalInitialTime(TIME_SLOTS[0]);
     setIsModalOpen(true);
   };
 
@@ -230,347 +240,315 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
     } else {
         newSchedule = [...data.schedule, newSession];
     }
-    const newData = { 
-        ...data, 
-        schedule: newSchedule,
-        lastModified: formatDate(new Date())
-    };
-    onUpdateData(newData);
+    onUpdateData({ ...data, schedule: newSchedule, lastModified: formatDate(new Date()) });
   };
 
   const handleMoveSession = (sessionId: string, newDay: DayOfWeek, newTimeSlot: string) => {
       const sessionToMove = data.schedule.find(s => s.id === sessionId);
       if (!sessionToMove) return;
-
       const [start, end] = newTimeSlot.split(' - ');
-      const movedSession: ClassSession = {
-          ...sessionToMove,
-          day: newDay,
-          startTime: start,
-          endTime: end
-      };
-
+      const movedSession: ClassSession = { ...sessionToMove, day: newDay, startTime: start, endTime: end };
       const conflict = checkConflict(movedSession, data);
       if (conflict.hasConflict) {
-          alert(`Cannot move class: ${conflict.message}`);
+          alert(`Conflict: ${conflict.message}`);
           return;
       }
-
-      const newSchedule = data.schedule.map(s => s.id === sessionId ? movedSession : s);
-      onUpdateData({ 
-          ...data, 
-          schedule: newSchedule,
-          lastModified: formatDate(new Date())
-      });
+      onUpdateData({ ...data, schedule: data.schedule.map(s => s.id === sessionId ? movedSession : s), lastModified: formatDate(new Date()) });
   };
 
   const handleDeleteSession = (id: string) => {
-    if (confirm("Are you sure you want to remove this class?")) {
-      const newData = { 
-          ...data, 
-          schedule: data.schedule.filter(s => s.id !== id),
-          lastModified: formatDate(new Date())
-      };
-      onUpdateData(newData);
+    if (confirm("Remove this class?")) {
+      onUpdateData({ ...data, schedule: data.schedule.filter(s => s.id !== id), lastModified: formatDate(new Date()) });
     }
   };
 
   const handleSaveSettings = () => {
-    onUpdateData({
-        ...data,
-        settings: {
-            ...data.settings,
-            semesterName: semesterName
-        },
-        lastModified: formatDate(new Date())
+    onUpdateData({ 
+      ...data, 
+      settings: { 
+        ...data.settings, 
+        semesterName, 
+        isPublished: localIsPublished
+      }, 
+      lastModified: formatDate(new Date()) 
     });
-    alert("Settings saved!");
-  };
-
-  const togglePublish = () => {
-      onUpdateData({
-          ...data,
-          settings: {
-              ...data.settings,
-              isPublished: !data.settings.isPublished
-          },
-          lastModified: formatDate(new Date())
-      });
+    alert("Settings saved successfully!");
   };
 
   const toggleOffDay = (day: string) => {
-      setNewTeacherOffDays(prev => 
-          prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-      );
+      setNewTeacherOffDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
   };
 
-  const handleAddRoom = () => {
-    setErrorMsg(null);
-    if (!newRoomNumber) { setErrorMsg("Room Number is required."); return; }
-    if (data.rooms.some(r => r.roomNumber.toLowerCase() === newRoomNumber.trim().toLowerCase())) {
-        setErrorMsg("A room with this number already exists."); return;
-    }
-    const newRoom: Room = { id: crypto.randomUUID(), roomNumber: newRoomNumber.trim(), type: newRoomType };
-    onUpdateData({ ...data, rooms: [...data.rooms, newRoom], lastModified: formatDate(new Date()) });
-    setNewRoomNumber(''); setNewRoomType('Theory');
-  };
+  // --- CRUD Handlers ---
 
-  const handleAddTeacher = () => {
+  const handleSaveTeacher = () => {
     setErrorMsg(null);
-    if (!newTeacherName || !newTeacherInitial || !newTeacherEmail) {
-      setErrorMsg("Teacher name, initial, and email are required."); return;
-    }
-    if (data.teachers.some(t => t.initial.toLowerCase() === newTeacherInitial.trim().toLowerCase())) {
-      setErrorMsg("Teacher initial exists."); return;
-    }
-    let counselingString = 'None';
-    if (!newTeacherCounselingNone) {
-        if (!newTeacherCounselingDay || !newTeacherCounselingTime) { setErrorMsg("Counseling Day/Time required."); return; }
-        counselingString = `${newTeacherCounselingDay} ${newTeacherCounselingTime}`;
-    }
-    const newTeacher: Teacher = {
-      id: crypto.randomUUID(), name: newTeacherName.trim(), initial: newTeacherInitial.trim().toUpperCase(),
-      email: newTeacherEmail.trim(), phone: newTeacherPhone.trim() || undefined, offDays: newTeacherOffDays, counselingHour: counselingString
+    if (!newTeacherName || !newTeacherInitial || !newTeacherEmail) { setErrorMsg("Required fields missing."); return; }
+    
+    const teacherData: Teacher = {
+      id: editingTeacherId || crypto.randomUUID(),
+      name: newTeacherName.trim(),
+      initial: newTeacherInitial.trim().toUpperCase(),
+      email: newTeacherEmail.trim(),
+      phone: newTeacherPhone.trim() || undefined,
+      offDays: newTeacherOffDays
     };
-    onUpdateData({ ...data, teachers: [...data.teachers, newTeacher], lastModified: formatDate(new Date()) });
-    setNewTeacherName(''); setNewTeacherInitial(''); setNewTeacherEmail(''); setNewTeacherPhone(''); setNewTeacherOffDays([]);
-    setNewTeacherCounselingDay(''); setNewTeacherCounselingTime(''); setNewTeacherCounselingNone(false);
+
+    let updatedTeachers;
+    if (editingTeacherId) {
+      updatedTeachers = data.teachers.map(t => t.id === editingTeacherId ? teacherData : t);
+    } else {
+      if (data.teachers.some(t => t.initial === teacherData.initial)) { setErrorMsg("Initial already exists."); return; }
+      updatedTeachers = [...data.teachers, teacherData];
+    }
+
+    onUpdateData({ ...data, teachers: updatedTeachers, lastModified: formatDate(new Date()) });
+    resetTeacherForm();
   };
 
-  const handleAddCourse = () => {
-    setErrorMsg(null);
-    if (!newCourseCode || !newCourseName || !newCourseCredits) { setErrorMsg("All course fields required."); return; }
-    if (data.courses.some(c => c.code.toLowerCase() === newCourseCode.trim().toLowerCase())) {
-      setErrorMsg("Course code exists."); return;
-    }
-    const newCourse: Course = {
-      id: crypto.randomUUID(), code: newCourseCode.trim().toUpperCase(), name: newCourseName.trim(), credits: parseInt(newCourseCredits)
-    };
-    onUpdateData({ ...data, courses: [...data.courses, newCourse], lastModified: formatDate(new Date()) });
-    setNewCourseCode(''); setNewCourseName(''); setNewCourseCredits('');
+  const resetTeacherForm = () => {
+    setNewTeacherName(''); setNewTeacherInitial(''); setNewTeacherEmail(''); setNewTeacherPhone(''); setNewTeacherOffDays([]); setEditingTeacherId(null);
   };
 
-  const handleAddSection = () => {
-    setErrorMsg(null);
-    if (!newSectionBatch || !newSectionStudents) { setErrorMsg("Batch and Student count required."); return; }
-    if (data.sections.some(s => s.name === newSectionName.trim() && s.batch === parseInt(newSectionBatch))) {
-       setErrorMsg("Section already exists."); return;
-    }
-    const newSection: Section = {
-      id: crypto.randomUUID(), name: newSectionName.trim(), batch: parseInt(newSectionBatch), studentCount: parseInt(newSectionStudents)
-    };
-    onUpdateData({ ...data, sections: [...data.sections, newSection], lastModified: formatDate(new Date()) });
-    setNewSectionName(''); setNewSectionBatch(''); setNewSectionStudents('');
+  const handleEditTeacher = (t: Teacher) => {
+    setNewTeacherName(t.name); setNewTeacherInitial(t.initial); setNewTeacherEmail(t.email); setNewTeacherPhone(t.phone || ''); setNewTeacherOffDays(t.offDays); setEditingTeacherId(t.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleSaveCourse = () => {
+    setErrorMsg(null);
+    if (!newCourseCode || !newCourseName || !newCourseCredits) { setErrorMsg("Required fields missing."); return; }
+    
+    const courseData: Course = {
+      id: editingCourseId || crypto.randomUUID(),
+      code: newCourseCode.trim().toUpperCase(),
+      name: newCourseName.trim(),
+      credits: parseInt(newCourseCredits)
+    };
+
+    let updatedCourses;
+    if (editingCourseId) {
+      updatedCourses = data.courses.map(c => c.id === editingCourseId ? courseData : c);
+    } else {
+      updatedCourses = [...data.courses, courseData];
+    }
+
+    onUpdateData({ ...data, courses: updatedCourses, lastModified: formatDate(new Date()) });
+    resetCourseForm();
+  };
+
+  const resetCourseForm = () => {
+    setNewCourseCode(''); setNewCourseName(''); setNewCourseCredits(''); setEditingCourseId(null);
+  };
+
+  const handleEditCourse = (c: Course) => {
+    setNewCourseCode(c.code); setNewCourseName(c.name); setNewCourseCredits(c.credits.toString()); setEditingCourseId(c.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveRoom = () => {
+    setErrorMsg(null);
+    if (!newRoomNumber) { setErrorMsg("Room Number required."); return; }
+    
+    const roomData: Room = {
+      id: editingRoomId || crypto.randomUUID(),
+      roomNumber: newRoomNumber.trim(),
+      type: newRoomType
+    };
+
+    let updatedRooms;
+    if (editingRoomId) {
+      updatedRooms = data.rooms.map(r => r.id === editingRoomId ? roomData : r);
+    } else {
+      updatedRooms = [...data.rooms, roomData];
+    }
+
+    onUpdateData({ ...data, rooms: updatedRooms, lastModified: formatDate(new Date()) });
+    resetRoomForm();
+  };
+
+  const resetRoomForm = () => {
+    setNewRoomNumber(''); setNewRoomType('Theory'); setEditingRoomId(null);
+  };
+
+  const handleEditRoom = (r: Room) => {
+    setNewRoomNumber(r.roomNumber); setNewRoomType(r.type); setEditingRoomId(r.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveSection = () => {
+    setErrorMsg(null);
+    if (!newSectionBatch || !newSectionStudents) { setErrorMsg("Required fields missing."); return; }
+    
+    const sectionData: Section = {
+      id: editingSectionId || crypto.randomUUID(),
+      name: newSectionName.trim(),
+      batch: parseInt(newSectionBatch),
+      studentCount: parseInt(newSectionStudents)
+    };
+
+    let updatedSections;
+    if (editingSectionId) {
+      updatedSections = data.sections.map(s => s.id === editingSectionId ? sectionData : s);
+    } else {
+      updatedSections = [...data.sections, sectionData];
+    }
+
+    onUpdateData({ ...data, sections: updatedSections, lastModified: formatDate(new Date()) });
+    resetSectionForm();
+  };
+
+  const resetSectionForm = () => {
+    setNewSectionName(''); setNewSectionBatch(''); setNewSectionStudents(''); setEditingSectionId(null);
+  };
+
+  const handleEditSection = (s: Section) => {
+    setNewSectionName(s.name); setNewSectionBatch(s.batch.toString()); setNewSectionStudents(s.studentCount.toString()); setEditingSectionId(s.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // --- Render Functions ---
 
   const renderScheduler = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 gap-4">
-            <div>
-                <h3 className="text-xl font-bold text-gray-800">Master Routine Board</h3>
-                <p className="text-gray-500 text-sm">Last Sync: {data.lastModified}</p>
+            <div className="flex items-center gap-4">
+                <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                    <Calendar className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-gray-800">Master Routine Board</h3>
+                    <p className="text-gray-500 text-sm flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5" /> 
+                      Standard Weekly Schedule
+                    </p>
+                </div>
             </div>
-            <div className="flex items-center gap-4 flex-wrap">
-               {!data.settings.isPublished && (
-                   <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-[10px] font-bold border border-yellow-200 uppercase tracking-widest">DRAFT</span>
-               )}
-               <button onClick={() => window.print()} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors">
+            <div className="flex items-center gap-4 flex-wrap w-full md:w-auto">
+               <button onClick={() => window.print()} className="flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors">
                  <Printer className="w-4 h-4" /> Print Master
                </button>
-               <button onClick={() => handleOpenModal()} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200">
-                 <Plus className="w-4 h-4" /> Add Class
+               <button onClick={() => handleOpenModal()} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200">
+                 <Plus className="w-4 h-4" /> Schedule Session
                </button>
             </div>
         </div>
-        <div className="print:block">
+        <div className="print:block overflow-hidden">
             <ScheduleGrid data={data} onSlotClick={handleOpenModal} onDeleteSession={handleDeleteSession} onMoveSession={handleMoveSession} onEditSession={handleEditSession} />
         </div>
     </div>
   );
 
-  // Implement missing render managers
   const renderTeacherManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Register New Faculty</h3>
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingTeacherId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">{editingTeacherId ? 'Update Faculty Member' : 'Register New Faculty'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <InputField label="Full Name" value={newTeacherName} onChange={(e: any) => setNewTeacherName(e.target.value)} />
                 <InputField label="Initial (e.g. JD)" value={newTeacherInitial} onChange={(e: any) => setNewTeacherInitial(e.target.value)} />
                 <InputField label="DIU Email" value={newTeacherEmail} onChange={(e: any) => setNewTeacherEmail(e.target.value)} type="email" />
                 <InputField label="Contact Number" value={newTeacherPhone} onChange={(e: any) => setNewTeacherPhone(e.target.value)} type="tel" />
-                <MultiSelectField 
-                    label="Off Days" 
-                    selectedValues={newTeacherOffDays} 
-                    onChange={toggleOffDay} 
-                    options={Object.values(DayOfWeek)} 
-                />
-                <div className="lg:col-span-1 grid grid-cols-1 gap-6">
-                    <SelectField 
-                        label="Counseling Day" 
-                        value={newTeacherCounselingDay} 
-                        onChange={(e: any) => setNewTeacherCounselingDay(e.target.value)}
-                        options={Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)}
-                    />
-                </div>
-                <div className="lg:col-span-1 grid grid-cols-1 gap-6">
-                    <InputField label="Counseling Time" value={newTeacherCounselingTime} onChange={(e: any) => setNewTeacherCounselingTime(e.target.value)} />
-                </div>
-                <div className="flex items-center gap-3 px-4">
-                    <input 
-                        type="checkbox" 
-                        id="no-counseling" 
-                        checked={newTeacherCounselingNone} 
-                        onChange={(e) => setNewTeacherCounselingNone(e.target.checked)}
-                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="no-counseling" className="text-sm font-medium text-gray-700">No counseling slot</label>
-                </div>
+                <MultiSelectField label="Off Days" selectedValues={newTeacherOffDays} onChange={toggleOffDay} options={Object.values(DayOfWeek)} />
             </div>
-            {errorMsg && activeTab === 'teachers' && (
-                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
-                    <AlertCircle className="w-4 h-4" /> {errorMsg}
-                </div>
-            )}
-            <div className="mt-8 flex justify-end">
-                <button onClick={handleAddTeacher} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Add Teacher Record</button>
+            {errorMsg && activeTab === 'teachers' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
+            <div className="mt-8 flex justify-end gap-3">
+                {editingTeacherId && <button onClick={resetTeacherForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
+                <button onClick={handleSaveTeacher} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingTeacherId ? 'Update Record' : 'Add Teacher'}</button>
             </div>
         </div>
-        <DataTable 
-            items={data.teachers} 
-            fields={[
-                { key: 'name', label: 'Name' },
-                { key: 'initial', label: 'Initial' },
-                { key: 'email', label: 'Email' },
-                { key: 'phone', label: 'Phone' },
-                { key: 'offDays', label: 'Off Days' },
-                { key: 'counselingHour', label: 'Counseling' }
-            ]} 
-            onDelete={(id: string) => onUpdateData({ ...data, teachers: data.teachers.filter(t => t.id !== id), lastModified: formatDate(new Date()) })}
-        />
+        <DataTable items={data.teachers} fields={[{ key: 'name', label: 'Name' }, { key: 'initial', label: 'Initial' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Phone' }, { key: 'offDays', label: 'Off Days' }]} onEdit={handleEditTeacher} onDelete={(id: string) => onUpdateData({ ...data, teachers: data.teachers.filter(t => t.id !== id), schedule: data.schedule.filter(s => s.teacherId !== id), lastModified: formatDate(new Date()) })} />
     </div>
   );
 
   const renderCourseManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Course Cataloging</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingCourseId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">{editingCourseId ? 'Update Course Details' : 'Course Cataloging'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <InputField label="Course Code" value={newCourseCode} onChange={(e: any) => setNewCourseCode(e.target.value)} placeholder="CSE101" />
                 <InputField label="Course Title" value={newCourseName} onChange={(e: any) => setNewCourseName(e.target.value)} />
                 <InputField label="Credits" value={newCourseCredits} onChange={(e: any) => setNewCourseCredits(e.target.value)} type="number" />
             </div>
-            {errorMsg && activeTab === 'courses' && (
-                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
-                    <AlertCircle className="w-4 h-4" /> {errorMsg}
-                </div>
-            )}
-            <div className="mt-8 flex justify-end">
-                <button onClick={handleAddCourse} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Register Course</button>
+            {errorMsg && activeTab === 'courses' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
+            <div className="mt-8 flex justify-end gap-3">
+                {editingCourseId && <button onClick={resetCourseForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
+                <button onClick={handleSaveCourse} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingCourseId ? 'Update Catalog' : 'Register Course'}</button>
             </div>
         </div>
-        <DataTable 
-            items={data.courses} 
-            fields={[
-                { key: 'code', label: 'Code' },
-                { key: 'name', label: 'Title' },
-                { key: 'credits', label: 'Credits' }
-            ]} 
-            onDelete={(id: string) => onUpdateData({ ...data, courses: data.courses.filter(c => c.id !== id), lastModified: formatDate(new Date()) })}
-        />
+        <DataTable items={data.courses} fields={[{ key: 'code', label: 'Code' }, { key: 'name', label: 'Title' }, { key: 'credits', label: 'Credits' }]} onEdit={handleEditCourse} onDelete={(id: string) => onUpdateData({ ...data, courses: data.courses.filter(c => c.id !== id), schedule: data.schedule.filter(s => s.courseId !== id), lastModified: formatDate(new Date()) })} />
     </div>
   );
 
   const renderRoomManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Resource Management</h3>
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingRoomId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">{editingRoomId ? 'Update Room Allocation' : 'Resource Management'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField label="Room Number" value={newRoomNumber} onChange={(e: any) => setNewRoomNumber(e.target.value)} placeholder="AB4-601" />
-                <SelectField 
-                    label="Resource Type" 
-                    value={newRoomType} 
-                    onChange={(e: any) => setNewRoomType(e.target.value)}
-                    options={
-                        <>
-                            <option value="Theory">Theory Room</option>
-                            <option value="Lab">Lab Facility</option>
-                        </>
-                    }
-                />
+                <SelectField label="Resource Type" value={newRoomType} onChange={(e: any) => setNewRoomType(e.target.value)} options={<><option value="Theory">Theory Room</option><option value="Lab">Lab Facility</option></>} />
             </div>
-            {errorMsg && activeTab === 'rooms' && (
-                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
-                    <AlertCircle className="w-4 h-4" /> {errorMsg}
-                </div>
-            )}
-            <div className="mt-8 flex justify-end">
-                <button onClick={handleAddRoom} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Add Room</button>
+            {errorMsg && activeTab === 'rooms' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
+            <div className="mt-8 flex justify-end gap-3">
+                {editingRoomId && <button onClick={resetRoomForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
+                <button onClick={handleSaveRoom} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingRoomId ? 'Update Resource' : 'Add Room'}</button>
             </div>
         </div>
-        <DataTable 
-            items={data.rooms} 
-            fields={[
-                { key: 'roomNumber', label: 'Room' },
-                { key: 'type', label: 'Type' }
-            ]} 
-            onDelete={(id: string) => onUpdateData({ ...data, rooms: data.rooms.filter(r => r.id !== id), lastModified: formatDate(new Date()) })}
-        />
+        <DataTable items={data.rooms} fields={[{ key: 'roomNumber', label: 'Room' }, { key: 'type', label: 'Type' }]} onEdit={handleEditRoom} onDelete={(id: string) => onUpdateData({ ...data, rooms: data.rooms.filter(r => r.id !== id), schedule: data.schedule.filter(s => s.roomId !== id), lastModified: formatDate(new Date()) })} />
     </div>
   );
 
   const renderSectionManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Student Batching</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingSectionId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">{editingSectionId ? 'Update Batch Configuration' : 'Student Batching'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <InputField label="Batch (e.g. 56)" value={newSectionBatch} onChange={(e: any) => setNewSectionBatch(e.target.value)} type="number" />
                 <InputField label="Section Name (Optional)" value={newSectionName} onChange={(e: any) => setNewSectionName(e.target.value)} placeholder="e.g. A" />
                 <InputField label="Expected Students" value={newSectionStudents} onChange={(e: any) => setNewSectionStudents(e.target.value)} type="number" />
             </div>
-            {errorMsg && activeTab === 'sections' && (
-                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
-                    <AlertCircle className="w-4 h-4" /> {errorMsg}
-                </div>
-            )}
-            <div className="mt-8 flex justify-end">
-                <button onClick={handleAddSection} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Create Section</button>
+            {errorMsg && activeTab === 'sections' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
+            <div className="mt-8 flex justify-end gap-3">
+                {editingSectionId && <button onClick={resetSectionForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
+                <button onClick={handleSaveSection} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingSectionId ? 'Update Batch' : 'Create Section'}</button>
             </div>
         </div>
-        <DataTable 
-            items={data.sections} 
-            fields={[
-                { key: 'batch', label: 'Batch' },
-                { key: 'name', label: 'Section' },
-                { key: 'studentCount', label: 'Students' }
-            ]} 
-            onDelete={(id: string) => onUpdateData({ ...data, sections: data.sections.filter(s => s.id !== id), lastModified: formatDate(new Date()) })}
-        />
+        <DataTable items={data.sections} fields={[{ key: 'batch', label: 'Batch' }, { key: 'name', label: 'Section' }, { key: 'studentCount', label: 'Students' }]} onEdit={handleEditSection} onDelete={(id: string) => onUpdateData({ ...data, sections: data.sections.filter(s => s.id !== id), schedule: data.schedule.filter(s => s.sectionId !== id), lastModified: formatDate(new Date()) })} />
     </div>
   );
 
   const renderSettings = () => (
       <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">Routine Configuration</h3>
-              <div className="space-y-6">
-                  <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Semester Title</label>
-                      <InputField value={semesterName} onChange={(e: any) => setSemesterName(e.target.value)} placeholder="e.g. Spring 2026" />
+          <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100">
+              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                  <Settings className="w-6 h-6 text-gray-400" /> Routine Configuration
+              </h3>
+              <div className="space-y-8">
+                  <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Semester Title</label>
+                      <InputField value={semesterName} onChange={(e: any) => setSemesterName(e.target.value)} />
                   </div>
-                  <div className="pt-4 border-t border-gray-100">
+
+                  <div className="pt-4 border-t border-gray-50">
                       <div className="flex items-center justify-between">
                           <div>
-                              <h4 className="font-medium text-gray-900">Student Visibility</h4>
-                              <p className="text-sm text-gray-500">Toggle if this routine is visible to the public.</p>
+                              <h4 className="font-bold text-gray-800">Visibility</h4>
+                              <p className="text-sm text-gray-500">Student access status.</p>
                           </div>
-                          <button onClick={togglePublish} className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-medium transition-all ${data.settings.isPublished ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                              {data.settings.isPublished ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                              {data.settings.isPublished ? 'Live' : 'Hidden'}
+                          <button 
+                              onClick={() => setLocalIsPublished(!localIsPublished)} 
+                              className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-medium transition-all ${localIsPublished ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                          >
+                              {localIsPublished ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                              {localIsPublished ? 'Live' : 'Hidden'}
                           </button>
                       </div>
                   </div>
-                  <div className="pt-6 flex justify-end">
-                      <button onClick={handleSaveSettings} className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-black transition-colors">Save All Changes</button>
+
+                  <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                      <p className="text-xs text-gray-400 italic font-medium">Changes apply only after clicking Save.</p>
+                      <button onClick={handleSaveSettings} className="w-full sm:w-auto bg-gray-900 text-white px-10 py-3.5 rounded-full font-bold hover:bg-black transition-colors shadow-xl shadow-gray-200 flex items-center justify-center gap-2">
+                          <Save className="w-4 h-4" /> Save Settings
+                      </button>
                   </div>
               </div>
           </div>
@@ -578,31 +556,92 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFDF6] flex flex-col md:flex-row font-sans selection:bg-blue-100">
+    <div className="min-h-screen bg-[#FDFDF6] flex flex-col md:flex-row font-sans relative overflow-x-hidden">
       <ClassModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveSession} data={data} initialDay={modalInitialDay} initialTime={modalInitialTime} sessionToEdit={sessionToEdit} />
-      <aside className="w-full md:w-80 bg-white md:h-screen md:sticky md:top-0 p-6 border-r border-gray-100 flex flex-col z-20 shadow-sm">
-        <div className="mb-10 pl-2 flex items-center gap-3">
-             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
+      
+      {/* Mobile Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden transition-opacity duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Top Header */}
+      <header className="md:hidden sticky top-0 bg-white/80 backdrop-blur-md z-20 border-b border-gray-100 px-6 py-4 flex items-center justify-between no-print">
+        <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
                 <LayoutDashboard className="w-5 h-5" />
-             </div>
-             <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Admin Console</h1>
-                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Master Workspace</p>
-             </div>
+            </div>
+            <div>
+                <h1 className="text-lg font-bold text-gray-900">Admin</h1>
+            </div>
         </div>
-        <nav className="flex-1 space-y-2">
-          <NavItem id="schedule" label="Master Schedule" icon={Calendar} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
-          <NavItem id="teachers" label="Teachers" icon={GraduationCap} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
-          <NavItem id="courses" label="Courses" icon={BookOpen} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
-          <NavItem id="rooms" label="Rooms" icon={MapPin} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
-          <NavItem id="sections" label="Sections" icon={Layers} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
-          <NavItem id="settings" label="Settings" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
+        <button 
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <MenuIcon className="w-6 h-6" />
+        </button>
+      </header>
+
+      {/* Navigation Sidebar/Drawer */}
+      <aside className={`
+        fixed inset-y-0 left-0 w-72 bg-white z-40 p-6 border-r border-gray-100 flex flex-col shadow-xl 
+        md:sticky md:top-0 md:h-screen md:w-80 md:shadow-sm md:translate-x-0 transition-transform duration-300 ease-in-out no-print
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="flex items-center justify-between mb-10 pl-2">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
+                    <LayoutDashboard className="w-5 h-5" />
+                </div>
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900">Admin Console</h1>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">CIS Workspace</p>
+                </div>
+            </div>
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="md:hidden p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+        </div>
+
+        <nav className="flex-1 space-y-2 overflow-y-auto">
+          <NavItem id="schedule" label="Board" icon={Calendar} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
+          <NavItem id="teachers" label="Teachers" icon={GraduationCap} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
+          <NavItem id="courses" label="Courses" icon={BookOpen} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
+          <NavItem id="rooms" label="Rooms" icon={MapPin} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
+          <NavItem id="sections" label="Sections" icon={Layers} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
+          <NavItem id="settings" label="Settings" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
         </nav>
+
         <div className="mt-8 pt-8 border-t border-gray-100">
-            <button onClick={onLogout} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"><LogOut className="w-4 h-4" /> Exit Session</button>
+            <button 
+                onClick={onLogout} 
+                className="w-full flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
+            >
+                <LogOut className="w-4 h-4" /> Logout
+            </button>
         </div>
       </aside>
-      <main className="flex-1 p-4 md:p-10 overflow-y-auto">
+
+      {/* Main Content */}
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto w-full relative">
+        {/* Subtle background pattern for creativity */}
+        <div className="absolute top-0 right-0 w-full h-96 -z-10 opacity-30 pointer-events-none no-print">
+            <svg className="w-full h-full text-blue-100" viewBox="0 0 1000 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 50C150 20 300 80 450 50C600 20 750 80 900 50V400H0V50Z" fill="currentColor" fillOpacity="0.3"/>
+                <path d="M0 150C200 120 400 180 600 150C800 120 1000 180 1200 150V400H0V150Z" fill="currentColor" fillOpacity="0.2"/>
+                <circle cx="850" cy="100" r="150" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" strokeDasharray="10 10"/>
+                <line x1="0" y1="200" x2="1000" y2="200" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
+                <line x1="0" y1="250" x2="1000" y2="250" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
+                <line x1="0" y1="300" x2="1000" y2="300" stroke="currentColor" strokeOpacity="0.05" strokeWidth="0.5"/>
+            </svg>
+        </div>
+
         {activeTab === 'schedule' && renderScheduler()}
         {activeTab === 'teachers' && renderTeacherManager()}
         {activeTab === 'courses' && renderCourseManager()}

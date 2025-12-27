@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AppData, getBatchColor, Section, DayOfWeek, TIME_SLOTS, ClassSession } from '../types';
 import ScheduleTable from './ScheduleTable';
@@ -180,7 +179,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                </div>
             </div>
             
-            <div className="overflow-hidden rounded-3xl border border-gray-50">
+            <div className="overflow-hidden rounded-3xl border border-gray-100">
                 <ScheduleTable 
                     data={data} 
                     filterType="all" 

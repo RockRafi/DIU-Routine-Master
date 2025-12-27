@@ -7,7 +7,7 @@ interface ScheduleTableProps {
   filterId?: string;
   onDeleteSession?: (sessionId: string) => void;
   isAdmin?: boolean;
-  specificDay?: DayOfWeek; // Added for filtering by specific day
+  specificDay?: DayOfWeek;
 }
 
 const ScheduleTable: React.FC<ScheduleTableProps> = ({ 
@@ -36,7 +36,7 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
           const section = data.sections.find(sec => sec.id === s.sectionId);
           return section && section.batch.toString() === filterId;
       }
-      return true; // 'all'
+      return true;
     });
   };
 
@@ -46,12 +46,12 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
     return (
         <div className="flex flex-col gap-2 h-full">
             {sessions.map(session => {
-                const course = data.courses.find(c => c.id === session.courseId);
+                const course = session.courseId ? data.courses.find(c => c.id === session.courseId) : null;
                 const teacher = data.teachers.find(t => t.id === session.teacherId);
-                const room = data.rooms.find(r => r.id === session.roomId);
-                const section = data.sections.find(s => s.id === session.sectionId);
+                const room = session.roomId ? data.rooms.find(r => r.id === session.roomId) : null;
+                const section = session.sectionId ? data.sections.find(s => s.id === session.sectionId) : null;
                 
-                const batchColorClass = section ? getBatchColor(section.batch) : 'bg-gray-100 border-gray-200 text-gray-800';
+                const batchColorClass = section ? getBatchColor(section.batch) : 'bg-blue-50 border-blue-100 text-blue-900';
 
                 return (
                     <div key={session.id} className={`relative p-2.5 rounded-xl border text-[10px] leading-tight flex flex-col justify-between shadow-sm hover:shadow-md transition-all ${batchColorClass} bg-opacity-70 group/cell`}>
@@ -65,12 +65,18 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
                         )}
                         
                         <div className="font-black mb-1 flex justify-between items-center text-[11px]">
-                            <span className="truncate mr-1">{course?.code}</span>
-                            <span className="opacity-70 font-bold whitespace-nowrap">{room?.roomNumber}</span>
+                            <span className="truncate mr-1">{course?.code || (session.counselingHour ? 'COUNSELING' : 'N/A')}</span>
+                            <span className="opacity-70 font-bold whitespace-nowrap">{room?.roomNumber || ''}</span>
                         </div>
                         <div className="font-semibold line-clamp-1 mb-1 opacity-90" title={course?.name}>
-                            {course?.name}
+                            {course?.name || (session.counselingHour ? 'Student Consultation' : '')}
                         </div>
+                        {session.counselingHour && (
+                          <div className="bg-white/50 px-1 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter text-blue-800 border border-blue-200/50 mb-1 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                            Faculty Available
+                          </div>
+                        )}
                         <div className="flex justify-between items-end opacity-70 font-bold uppercase tracking-tighter">
                             <span>{teacher?.initial}</span>
                             {(filterType === 'batch' || filterType === 'all') && section && (
