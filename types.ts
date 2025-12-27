@@ -3,7 +3,8 @@ export interface Teacher {
   name: string;
   initial: string;
   email: string;
-  offDays: string[]; // Changed from offDay?: string to string[]
+  phone?: string; // Added phone number
+  offDays: string[]; 
   counselingHour?: string;
 }
 
@@ -17,7 +18,6 @@ export interface Course {
 export interface Room {
   id: string;
   roomNumber: string;
-  // capacity removed as requested
   type: 'Lab' | 'Theory';
 }
 
@@ -25,7 +25,7 @@ export interface Section {
   id: string;
   name: string; // e.g., "A", "B", or "" for whole batch
   batch: number;
-  studentCount: number; // Added
+  studentCount: number; 
 }
 
 export enum DayOfWeek {
@@ -62,6 +62,7 @@ export interface AppData {
   rooms: Room[];
   sections: Section[];
   schedule: ClassSession[];
+  lastModified?: string; // Added last modified date
 }
 
 export const TIME_SLOTS = [

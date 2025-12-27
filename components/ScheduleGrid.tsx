@@ -17,23 +17,29 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   onMoveSession,
   onEditSession
 }) => {
-  const days = Object.values(DayOfWeek);
+  // ACADEMIC WEEK ORDER: Saturday to Friday
+  const DAYS_ORDER = [
+    DayOfWeek.Saturday,
+    DayOfWeek.Sunday, 
+    DayOfWeek.Monday, 
+    DayOfWeek.Tuesday, 
+    DayOfWeek.Wednesday, 
+    DayOfWeek.Thursday, 
+    DayOfWeek.Friday
+  ];
 
   const getSessionsForSlot = (day: DayOfWeek, slot: string) => {
     const startTime = slot.split(' - ')[0];
     return data.schedule.filter(s => s.day === day && s.startTime === startTime);
   };
 
-  // -- Drag and Drop Handlers --
-
   const handleDragStart = (e: React.DragEvent, sessionId: string) => {
     e.dataTransfer.setData("sessionId", sessionId);
     e.dataTransfer.effectAllowed = "move";
-    // Optional: Set a custom drag image or style here if needed
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   };
 
@@ -60,7 +66,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {days.map(day => (
+            {DAYS_ORDER.map(day => (
               <tr key={day} className="hover:bg-gray-50/30 transition-colors">
                 <td className="p-4 font-medium text-gray-800 bg-white sticky left-0 z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                   {day}
@@ -75,14 +81,12 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, day, slot)}
                     >
-                      {/* Empty State / Add Button */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none print:hidden">
                         <div className="bg-blue-600 text-white p-2 rounded-full shadow-lg">
                           <Plus className="w-4 h-4" />
                         </div>
                       </div>
 
-                      {/* Sessions List */}
                       <div className="space-y-2 relative z-10">
                         {sessions.map(session => {
                           const course = data.courses.find(c => c.id === session.courseId);

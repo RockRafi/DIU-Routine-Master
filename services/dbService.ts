@@ -1,15 +1,28 @@
 import { AppData, ClassSession, DayOfWeek, Teacher, Course, Room, Section } from '../types';
 
+// Formatting helper for 01-January-2025
+export const formatDate = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 // Initial Mock Data
 const INITIAL_DATA: AppData = {
   settings: {
     semesterName: 'Spring 2026',
     isPublished: true,
   },
+  lastModified: formatDate(new Date()),
   teachers: [
-    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd', offDays: ['Friday', 'Saturday'], counselingHour: 'Sunday 10:00 AM - 11:30 AM' },
-    { id: 't2', name: 'Ms. Jane Smith', initial: 'JS', email: 'jane@diu.edu.bd', offDays: ['Saturday'], counselingHour: 'Monday 11:30 AM - 01:00 PM' },
-    { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd', offDays: ['Thursday'], counselingHour: 'None' },
+    { id: 't1', name: 'Mr. John Doe', initial: 'JD', email: 'john@diu.edu.bd', phone: '+8801700000001', offDays: ['Friday', 'Saturday'], counselingHour: 'Sunday 10:00 AM - 11:30 AM' },
+    { id: 't2', name: 'Ms. Jane Smith', initial: 'JS', email: 'jane@diu.edu.bd', phone: '+8801700000002', offDays: ['Saturday'], counselingHour: 'Monday 11:30 AM - 01:00 PM' },
+    { id: 't3', name: 'Dr. Robert Brown', initial: 'RB', email: 'robert@diu.edu.bd', phone: '+8801700000003', offDays: ['Thursday'], counselingHour: 'None' },
   ],
   courses: [
     { id: 'c1', code: 'CSE101', name: 'Structured Programming', credits: 3 },
@@ -38,31 +51,21 @@ export const getInitialData = (): AppData => {
   const stored = localStorage.getItem('diu_routine_data');
   if (stored) {
     const parsed = JSON.parse(stored);
-    // Backward compatibility check for settings
-    if (!parsed.settings) {
-      parsed.settings = INITIAL_DATA.settings;
-    }
-    // Migration: ensure sections have studentCount if missing
+    if (!parsed.settings) parsed.settings = INITIAL_DATA.settings;
+    if (!parsed.lastModified) parsed.lastModified = INITIAL_DATA.lastModified;
+    
     parsed.sections = parsed.sections.map((s: any) => ({
         ...s,
         studentCount: s.studentCount || 0
     }));
 
-    // Migration: Convert legacy single 'offDay' string to 'offDays' array
     parsed.teachers = parsed.teachers.map((t: any) => {
         let offDays = t.offDays;
         if (!offDays) {
-            // Check for old key
-            if (t.offDay) {
-                offDays = [t.offDay];
-            } else {
-                offDays = [];
-            }
+            if (t.offDay) offDays = [t.offDay];
+            else offDays = [];
         }
-        return {
-            ...t,
-            offDays: offDays
-        };
+        return { ...t, offDays: offDays };
     });
 
     return parsed;
@@ -71,7 +74,11 @@ export const getInitialData = (): AppData => {
 };
 
 export const saveData = (data: AppData) => {
-  localStorage.setItem('diu_routine_data', JSON.stringify(data));
+  const dataWithTimestamp = {
+    ...data,
+    lastModified: formatDate(new Date())
+  };
+  localStorage.setItem('diu_routine_data', JSON.stringify(dataWithTimestamp));
 };
 
 export interface ConflictError {
@@ -79,7 +86,6 @@ export interface ConflictError {
   message?: string;
 }
 
-// Helper to get names for error messages
 const getNameById = (id: string, type: 'teachers' | 'rooms' | 'sections', data: AppData): string => {
   if (type === 'teachers') return data.teachers.find(t => t.id === id)?.name || id;
   if (type === 'rooms') return data.rooms.find(r => r.id === id)?.roomNumber || id;
@@ -94,43 +100,33 @@ export const checkConflict = (
   newSession: ClassSession,
   data: AppData
 ): ConflictError => {
-  const currentSchedule = data.schedule;
-  
-  // Filter sessions that overlap in time and day (excluding the session itself if we were editing)
-  const overlappingSessions = currentSchedule.filter(s => 
+  const overlappingSessions = data.schedule.filter(s => 
     s.day === newSession.day &&
-    s.startTime === newSession.startTime && // Simplified time slot check
+    s.startTime === newSession.startTime && 
     s.id !== newSession.id
   );
 
   for (const session of overlappingSessions) {
-    // 1. Teacher Conflict
     if (session.teacherId === newSession.teacherId) {
-      const roomName = getNameById(session.roomId, 'rooms', data);
       return { 
         hasConflict: true, 
-        message: `${getNameById(session.teacherId, 'teachers', data)} is already assigned to ${roomName} at this time.` 
+        message: `${getNameById(session.teacherId, 'teachers', data)} is already busy in ${getNameById(session.roomId, 'rooms', data)}.` 
       };
     }
-    // 2. Room Conflict
     if (session.roomId === newSession.roomId) {
-      const teacherName = getNameById(session.teacherId, 'teachers', data);
       return { 
         hasConflict: true, 
-        message: `Room ${getNameById(session.roomId, 'rooms', data)} is already booked by ${teacherName}. Please contact them.` 
+        message: `Room ${getNameById(session.roomId, 'rooms', data)} is already occupied.` 
       };
     }
-    // 3. Section Conflict
     if (session.sectionId === newSession.sectionId) {
-      const teacherName = getNameById(session.teacherId, 'teachers', data);
       return { 
         hasConflict: true, 
-        message: `Section ${getNameById(session.sectionId, 'sections', data)} already has a class with ${teacherName}.` 
+        message: `Section ${getNameById(session.sectionId, 'sections', data)} already has a class.` 
       };
     }
   }
 
-  // 4. Teacher Off-Day Conflict Check
   const teacher = data.teachers.find(t => t.id === newSession.teacherId);
   if (teacher && teacher.offDays && teacher.offDays.includes(newSession.day)) {
       return {

@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, Room, Teacher, Course, Section } from '../types';
 import ScheduleGrid from './ScheduleGrid';
 import ClassModal from './ClassModal';
-import { checkConflict } from '../services/dbService';
-import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download, ChevronDown, Check, X } from 'lucide-react';
+import { checkConflict, formatDate } from '../services/dbService';
+import { Trash2, Plus, AlertCircle, Save, Database, LogOut, Calendar, GraduationCap, BookOpen, MapPin, Layers, LayoutDashboard, Settings, ToggleLeft, ToggleRight, Printer, Download, ChevronDown, Check, X, Phone } from 'lucide-react';
 
 // --- Sub-Components Defined Outside ---
 
@@ -30,7 +30,6 @@ const MultiSelectField = ({ label, selectedValues, onChange, options }: { label:
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -133,7 +132,6 @@ const DataTable = ({ items, fields, onDelete, emptyMessage = "No records found."
               <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                 {fields.map((f: any) => (
                   <td key={f.key} className="px-8 py-5 whitespace-nowrap text-sm text-gray-700">
-                    {/* Handle arrays (like offDays) gracefully */}
                     {Array.isArray(item[f.key]) 
                         ? (item[f.key].length > 0 ? (
                             <div className="flex flex-wrap gap-1">
@@ -183,23 +181,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   const [activeTab, setActiveTab] = useState<'schedule' | 'teachers' | 'courses' | 'rooms' | 'sections' | 'settings'>('schedule');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionToEdit, setSessionToEdit] = useState<ClassSession | undefined>(undefined);
   const [modalInitialDay, setModalInitialDay] = useState<DayOfWeek>(DayOfWeek.Sunday);
   const [modalInitialTime, setModalInitialTime] = useState<string>(TIME_SLOTS[0]);
 
-  // Form States
   const [newRoomNumber, setNewRoomNumber] = useState('');
   const [newRoomType, setNewRoomType] = useState<'Theory' | 'Lab'>('Theory');
 
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherInitial, setNewTeacherInitial] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
-  // Teacher Off Day State (Array)
+  const [newTeacherPhone, setNewTeacherPhone] = useState('');
   const [newTeacherOffDays, setNewTeacherOffDays] = useState<string[]>([]);
-  
-  // Counseling form state
   const [newTeacherCounselingDay, setNewTeacherCounselingDay] = useState('');
   const [newTeacherCounselingTime, setNewTeacherCounselingTime] = useState('');
   const [newTeacherCounselingNone, setNewTeacherCounselingNone] = useState(false);
@@ -212,13 +206,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   const [newSectionBatch, setNewSectionBatch] = useState('');
   const [newSectionStudents, setNewSectionStudents] = useState('');
 
-  // Settings State
   const [semesterName, setSemesterName] = useState(data.settings.semesterName);
 
-  // -- Actions --
-
   const handleOpenModal = (day?: DayOfWeek, time?: string) => {
-    setSessionToEdit(undefined); // Reset edit mode
+    setSessionToEdit(undefined); 
     if (day) setModalInitialDay(day);
     if (time) setModalInitialTime(time);
     setIsModalOpen(true);
@@ -227,7 +218,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   const handleEditSession = (session: ClassSession) => {
     setSessionToEdit(session);
     setModalInitialDay(session.day);
-    // Combine start and end time to match TIME_SLOTS format
     const timeSlot = `${session.startTime} - ${session.endTime}`;
     setModalInitialTime(timeSlot);
     setIsModalOpen(true);
@@ -235,13 +225,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const handleSaveSession = (newSession: ClassSession) => {
     let newSchedule;
-    // Check if we are updating an existing session
     if (data.schedule.find(s => s.id === newSession.id)) {
         newSchedule = data.schedule.map(s => s.id === newSession.id ? newSession : s);
     } else {
         newSchedule = [...data.schedule, newSession];
     }
-    const newData = { ...data, schedule: newSchedule };
+    const newData = { 
+        ...data, 
+        schedule: newSchedule,
+        lastModified: formatDate(new Date())
+    };
     onUpdateData(newData);
   };
 
@@ -250,7 +243,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
       if (!sessionToMove) return;
 
       const [start, end] = newTimeSlot.split(' - ');
-      
       const movedSession: ClassSession = {
           ...sessionToMove,
           day: newDay,
@@ -258,22 +250,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
           endTime: end
       };
 
-      // Check conflict
       const conflict = checkConflict(movedSession, data);
-      
       if (conflict.hasConflict) {
           alert(`Cannot move class: ${conflict.message}`);
           return;
       }
 
-      // Update
       const newSchedule = data.schedule.map(s => s.id === sessionId ? movedSession : s);
-      onUpdateData({ ...data, schedule: newSchedule });
+      onUpdateData({ 
+          ...data, 
+          schedule: newSchedule,
+          lastModified: formatDate(new Date())
+      });
   };
 
   const handleDeleteSession = (id: string) => {
     if (confirm("Are you sure you want to remove this class?")) {
-      const newData = { ...data, schedule: data.schedule.filter(s => s.id !== id) };
+      const newData = { 
+          ...data, 
+          schedule: data.schedule.filter(s => s.id !== id),
+          lastModified: formatDate(new Date())
+      };
       onUpdateData(newData);
     }
   };
@@ -284,7 +281,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         settings: {
             ...data.settings,
             semesterName: semesterName
-        }
+        },
+        lastModified: formatDate(new Date())
     });
     alert("Settings saved!");
   };
@@ -295,409 +293,303 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
           settings: {
               ...data.settings,
               isPublished: !data.settings.isPublished
-          }
+          },
+          lastModified: formatDate(new Date())
       });
   };
 
   const toggleOffDay = (day: string) => {
       setNewTeacherOffDays(prev => 
-          prev.includes(day) 
-            ? prev.filter(d => d !== day) 
-            : [...prev, day]
+          prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
       );
   };
 
   const handleAddRoom = () => {
     setErrorMsg(null);
-    if (!newRoomNumber) {
-      setErrorMsg("Room Number is required.");
-      return;
-    }
+    if (!newRoomNumber) { setErrorMsg("Room Number is required."); return; }
     if (data.rooms.some(r => r.roomNumber.toLowerCase() === newRoomNumber.trim().toLowerCase())) {
-        setErrorMsg("A room with this number already exists.");
-        return;
+        setErrorMsg("A room with this number already exists."); return;
     }
-    const newRoom: Room = {
-      id: crypto.randomUUID(),
-      roomNumber: newRoomNumber.trim(),
-      type: newRoomType
-    };
-    onUpdateData({ ...data, rooms: [...data.rooms, newRoom] });
-    setNewRoomNumber('');
-    setNewRoomType('Theory');
+    const newRoom: Room = { id: crypto.randomUUID(), roomNumber: newRoomNumber.trim(), type: newRoomType };
+    onUpdateData({ ...data, rooms: [...data.rooms, newRoom], lastModified: formatDate(new Date()) });
+    setNewRoomNumber(''); setNewRoomType('Theory');
   };
 
   const handleAddTeacher = () => {
     setErrorMsg(null);
     if (!newTeacherName || !newTeacherInitial || !newTeacherEmail) {
-      setErrorMsg("All teacher fields (Name, Initial, Email) are required.");
-      return;
+      setErrorMsg("Teacher name, initial, and email are required."); return;
     }
     if (data.teachers.some(t => t.initial.toLowerCase() === newTeacherInitial.trim().toLowerCase())) {
-      setErrorMsg("A teacher with this initial already exists.");
-      return;
+      setErrorMsg("Teacher initial exists."); return;
     }
-
     let counselingString = 'None';
     if (!newTeacherCounselingNone) {
-        if (!newTeacherCounselingDay || !newTeacherCounselingTime) {
-             setErrorMsg("Please select Counseling Day and Time, or check 'None'.");
-             return;
-        }
+        if (!newTeacherCounselingDay || !newTeacherCounselingTime) { setErrorMsg("Counseling Day/Time required."); return; }
         counselingString = `${newTeacherCounselingDay} ${newTeacherCounselingTime}`;
     }
-
     const newTeacher: Teacher = {
-      id: crypto.randomUUID(),
-      name: newTeacherName.trim(),
-      initial: newTeacherInitial.trim().toUpperCase(),
-      email: newTeacherEmail.trim(),
-      offDays: newTeacherOffDays,
-      counselingHour: counselingString
+      id: crypto.randomUUID(), name: newTeacherName.trim(), initial: newTeacherInitial.trim().toUpperCase(),
+      email: newTeacherEmail.trim(), phone: newTeacherPhone.trim() || undefined, offDays: newTeacherOffDays, counselingHour: counselingString
     };
-    onUpdateData({ ...data, teachers: [...data.teachers, newTeacher] });
-    setNewTeacherName('');
-    setNewTeacherInitial('');
-    setNewTeacherEmail('');
-    setNewTeacherOffDays([]);
-    setNewTeacherCounselingDay('');
-    setNewTeacherCounselingTime('');
-    setNewTeacherCounselingNone(false);
+    onUpdateData({ ...data, teachers: [...data.teachers, newTeacher], lastModified: formatDate(new Date()) });
+    setNewTeacherName(''); setNewTeacherInitial(''); setNewTeacherEmail(''); setNewTeacherPhone(''); setNewTeacherOffDays([]);
+    setNewTeacherCounselingDay(''); setNewTeacherCounselingTime(''); setNewTeacherCounselingNone(false);
   };
 
   const handleAddCourse = () => {
     setErrorMsg(null);
-    if (!newCourseCode || !newCourseName || !newCourseCredits) {
-      setErrorMsg("All course fields are required.");
-      return;
-    }
+    if (!newCourseCode || !newCourseName || !newCourseCredits) { setErrorMsg("All course fields required."); return; }
     if (data.courses.some(c => c.code.toLowerCase() === newCourseCode.trim().toLowerCase())) {
-      setErrorMsg("A course with this code already exists.");
-      return;
+      setErrorMsg("Course code exists."); return;
     }
     const newCourse: Course = {
-      id: crypto.randomUUID(),
-      code: newCourseCode.trim().toUpperCase(),
-      name: newCourseName.trim(),
-      credits: parseInt(newCourseCredits)
+      id: crypto.randomUUID(), code: newCourseCode.trim().toUpperCase(), name: newCourseName.trim(), credits: parseInt(newCourseCredits)
     };
-    onUpdateData({ ...data, courses: [...data.courses, newCourse] });
-    setNewCourseCode('');
-    setNewCourseName('');
-    setNewCourseCredits('');
+    onUpdateData({ ...data, courses: [...data.courses, newCourse], lastModified: formatDate(new Date()) });
+    setNewCourseCode(''); setNewCourseName(''); setNewCourseCredits('');
   };
 
   const handleAddSection = () => {
     setErrorMsg(null);
-    if (!newSectionBatch || !newSectionStudents) {
-      setErrorMsg("Batch number and Student count are required.");
-      return;
-    }
-    // Check for duplicate
+    if (!newSectionBatch || !newSectionStudents) { setErrorMsg("Batch and Student count required."); return; }
     if (data.sections.some(s => s.name === newSectionName.trim() && s.batch === parseInt(newSectionBatch))) {
-       setErrorMsg("This section already exists.");
-       return;
+       setErrorMsg("Section already exists."); return;
     }
     const newSection: Section = {
-      id: crypto.randomUUID(),
-      name: newSectionName.trim(),
-      batch: parseInt(newSectionBatch),
-      studentCount: parseInt(newSectionStudents)
+      id: crypto.randomUUID(), name: newSectionName.trim(), batch: parseInt(newSectionBatch), studentCount: parseInt(newSectionStudents)
     };
-    onUpdateData({ ...data, sections: [...data.sections, newSection] });
-    setNewSectionName('');
-    setNewSectionBatch('');
-    setNewSectionStudents('');
+    onUpdateData({ ...data, sections: [...data.sections, newSection], lastModified: formatDate(new Date()) });
+    setNewSectionName(''); setNewSectionBatch(''); setNewSectionStudents('');
   };
-
-
-  // -- Render Tab Content --
 
   const renderScheduler = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 gap-4">
             <div>
-                <h3 className="text-xl font-bold text-gray-800">Master Schedule</h3>
-                <p className="text-gray-500 text-sm">Drag and drop classes to move them. Double click to edit.</p>
+                <h3 className="text-xl font-bold text-gray-800">Master Routine Board</h3>
+                <p className="text-gray-500 text-sm">Last Sync: {data.lastModified}</p>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
                {!data.settings.isPublished && (
-                   <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold border border-yellow-200">
-                       DRAFT MODE
-                   </span>
+                   <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-[10px] font-bold border border-yellow-200 uppercase tracking-widest">DRAFT</span>
                )}
-               <button 
-                onClick={() => window.print()} 
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors"
-               >
+               <button onClick={() => window.print()} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors">
                  <Printer className="w-4 h-4" /> Print Master
                </button>
-               <button 
-                onClick={() => handleOpenModal()} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200"
-               >
+               <button onClick={() => handleOpenModal()} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200">
                  <Plus className="w-4 h-4" /> Add Class
                </button>
             </div>
         </div>
         <div className="print:block">
-            <ScheduleGrid 
-                data={data} 
-                onSlotClick={handleOpenModal} 
-                onDeleteSession={handleDeleteSession}
-                onMoveSession={handleMoveSession}
-                onEditSession={handleEditSession}
-            />
+            <ScheduleGrid data={data} onSlotClick={handleOpenModal} onDeleteSession={handleDeleteSession} onMoveSession={handleMoveSession} onEditSession={handleEditSession} />
         </div>
+    </div>
+  );
+
+  // Implement missing render managers
+  const renderTeacherManager = () => (
+    <div className="space-y-10 animate-in fade-in duration-500">
+        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Register New Faculty</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <InputField label="Full Name" value={newTeacherName} onChange={(e: any) => setNewTeacherName(e.target.value)} />
+                <InputField label="Initial (e.g. JD)" value={newTeacherInitial} onChange={(e: any) => setNewTeacherInitial(e.target.value)} />
+                <InputField label="DIU Email" value={newTeacherEmail} onChange={(e: any) => setNewTeacherEmail(e.target.value)} type="email" />
+                <InputField label="Contact Number" value={newTeacherPhone} onChange={(e: any) => setNewTeacherPhone(e.target.value)} type="tel" />
+                <MultiSelectField 
+                    label="Off Days" 
+                    selectedValues={newTeacherOffDays} 
+                    onChange={toggleOffDay} 
+                    options={Object.values(DayOfWeek)} 
+                />
+                <div className="lg:col-span-1 grid grid-cols-1 gap-6">
+                    <SelectField 
+                        label="Counseling Day" 
+                        value={newTeacherCounselingDay} 
+                        onChange={(e: any) => setNewTeacherCounselingDay(e.target.value)}
+                        options={Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)}
+                    />
+                </div>
+                <div className="lg:col-span-1 grid grid-cols-1 gap-6">
+                    <InputField label="Counseling Time" value={newTeacherCounselingTime} onChange={(e: any) => setNewTeacherCounselingTime(e.target.value)} />
+                </div>
+                <div className="flex items-center gap-3 px-4">
+                    <input 
+                        type="checkbox" 
+                        id="no-counseling" 
+                        checked={newTeacherCounselingNone} 
+                        onChange={(e) => setNewTeacherCounselingNone(e.target.checked)}
+                        className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="no-counseling" className="text-sm font-medium text-gray-700">No counseling slot</label>
+                </div>
+            </div>
+            {errorMsg && activeTab === 'teachers' && (
+                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
+                    <AlertCircle className="w-4 h-4" /> {errorMsg}
+                </div>
+            )}
+            <div className="mt-8 flex justify-end">
+                <button onClick={handleAddTeacher} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Add Teacher Record</button>
+            </div>
+        </div>
+        <DataTable 
+            items={data.teachers} 
+            fields={[
+                { key: 'name', label: 'Name' },
+                { key: 'initial', label: 'Initial' },
+                { key: 'email', label: 'Email' },
+                { key: 'phone', label: 'Phone' },
+                { key: 'offDays', label: 'Off Days' },
+                { key: 'counselingHour', label: 'Counseling' }
+            ]} 
+            onDelete={(id: string) => onUpdateData({ ...data, teachers: data.teachers.filter(t => t.id !== id), lastModified: formatDate(new Date()) })}
+        />
+    </div>
+  );
+
+  const renderCourseManager = () => (
+    <div className="space-y-10 animate-in fade-in duration-500">
+        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Course Cataloging</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <InputField label="Course Code" value={newCourseCode} onChange={(e: any) => setNewCourseCode(e.target.value)} placeholder="CSE101" />
+                <InputField label="Course Title" value={newCourseName} onChange={(e: any) => setNewCourseName(e.target.value)} />
+                <InputField label="Credits" value={newCourseCredits} onChange={(e: any) => setNewCourseCredits(e.target.value)} type="number" />
+            </div>
+            {errorMsg && activeTab === 'courses' && (
+                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
+                    <AlertCircle className="w-4 h-4" /> {errorMsg}
+                </div>
+            )}
+            <div className="mt-8 flex justify-end">
+                <button onClick={handleAddCourse} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Register Course</button>
+            </div>
+        </div>
+        <DataTable 
+            items={data.courses} 
+            fields={[
+                { key: 'code', label: 'Code' },
+                { key: 'name', label: 'Title' },
+                { key: 'credits', label: 'Credits' }
+            ]} 
+            onDelete={(id: string) => onUpdateData({ ...data, courses: data.courses.filter(c => c.id !== id), lastModified: formatDate(new Date()) })}
+        />
+    </div>
+  );
+
+  const renderRoomManager = () => (
+    <div className="space-y-10 animate-in fade-in duration-500">
+        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Resource Management</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField label="Room Number" value={newRoomNumber} onChange={(e: any) => setNewRoomNumber(e.target.value)} placeholder="AB4-601" />
+                <SelectField 
+                    label="Resource Type" 
+                    value={newRoomType} 
+                    onChange={(e: any) => setNewRoomType(e.target.value)}
+                    options={
+                        <>
+                            <option value="Theory">Theory Room</option>
+                            <option value="Lab">Lab Facility</option>
+                        </>
+                    }
+                />
+            </div>
+            {errorMsg && activeTab === 'rooms' && (
+                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
+                    <AlertCircle className="w-4 h-4" /> {errorMsg}
+                </div>
+            )}
+            <div className="mt-8 flex justify-end">
+                <button onClick={handleAddRoom} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Add Room</button>
+            </div>
+        </div>
+        <DataTable 
+            items={data.rooms} 
+            fields={[
+                { key: 'roomNumber', label: 'Room' },
+                { key: 'type', label: 'Type' }
+            ]} 
+            onDelete={(id: string) => onUpdateData({ ...data, rooms: data.rooms.filter(r => r.id !== id), lastModified: formatDate(new Date()) })}
+        />
+    </div>
+  );
+
+  const renderSectionManager = () => (
+    <div className="space-y-10 animate-in fade-in duration-500">
+        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Student Batching</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <InputField label="Batch (e.g. 56)" value={newSectionBatch} onChange={(e: any) => setNewSectionBatch(e.target.value)} type="number" />
+                <InputField label="Section Name (Optional)" value={newSectionName} onChange={(e: any) => setNewSectionName(e.target.value)} placeholder="e.g. A" />
+                <InputField label="Expected Students" value={newSectionStudents} onChange={(e: any) => setNewSectionStudents(e.target.value)} type="number" />
+            </div>
+            {errorMsg && activeTab === 'sections' && (
+                <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100">
+                    <AlertCircle className="w-4 h-4" /> {errorMsg}
+                </div>
+            )}
+            <div className="mt-8 flex justify-end">
+                <button onClick={handleAddSection} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">Create Section</button>
+            </div>
+        </div>
+        <DataTable 
+            items={data.sections} 
+            fields={[
+                { key: 'batch', label: 'Batch' },
+                { key: 'name', label: 'Section' },
+                { key: 'studentCount', label: 'Students' }
+            ]} 
+            onDelete={(id: string) => onUpdateData({ ...data, sections: data.sections.filter(s => s.id !== id), lastModified: formatDate(new Date()) })}
+        />
     </div>
   );
 
   const renderSettings = () => (
       <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
           <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold text-gray-800 mb-6">System Configuration</h3>
-              
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Routine Configuration</h3>
               <div className="space-y-6">
                   <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Current Semester Name</label>
-                      <InputField 
-                        value={semesterName} 
-                        onChange={(e: any) => setSemesterName(e.target.value)} 
-                        placeholder="e.g. Spring 2026" 
-                      />
-                      <p className="text-xs text-gray-500 mt-2">This will be displayed on the public homepage and all exports.</p>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Semester Title</label>
+                      <InputField value={semesterName} onChange={(e: any) => setSemesterName(e.target.value)} placeholder="e.g. Spring 2026" />
                   </div>
-
                   <div className="pt-4 border-t border-gray-100">
                       <div className="flex items-center justify-between">
                           <div>
-                              <h4 className="font-medium text-gray-900">Public Visibility</h4>
-                              <p className="text-sm text-gray-500">Control if students can see the routine.</p>
+                              <h4 className="font-medium text-gray-900">Student Visibility</h4>
+                              <p className="text-sm text-gray-500">Toggle if this routine is visible to the public.</p>
                           </div>
-                          <button 
-                            onClick={togglePublish}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-medium transition-all ${
-                                data.settings.isPublished 
-                                ? 'bg-green-100 text-green-700 border border-green-200' 
-                                : 'bg-gray-100 text-gray-600 border border-gray-200'
-                            }`}
-                          >
+                          <button onClick={togglePublish} className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-medium transition-all ${data.settings.isPublished ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                               {data.settings.isPublished ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                              {data.settings.isPublished ? 'Published' : 'Unpublished'}
+                              {data.settings.isPublished ? 'Live' : 'Hidden'}
                           </button>
                       </div>
                   </div>
-
                   <div className="pt-6 flex justify-end">
-                      <button 
-                        onClick={handleSaveSettings}
-                        className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-black transition-colors"
-                      >
-                          Save Changes
-                      </button>
+                      <button onClick={handleSaveSettings} className="bg-gray-900 text-white px-8 py-3 rounded-full font-medium hover:bg-black transition-colors">Save All Changes</button>
                   </div>
               </div>
           </div>
       </div>
   );
 
-  const renderRoomManager = () => (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden">
-        <div className="flex items-center gap-3 mb-8 relative">
-            <div className="bg-orange-600 text-white p-2.5 rounded-xl shadow-md shadow-orange-200">
-                <Plus className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xl font-medium text-gray-800">Add New Room</h3>
-            </div>
-        </div>
-        {errorMsg && <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-2xl text-sm">{errorMsg}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-          <InputField label="Room Number" value={newRoomNumber} onChange={(e: any) => setNewRoomNumber(e.target.value)} placeholder="e.g. AB4-601" />
-           <SelectField label="Type" value={newRoomType} onChange={(e: any) => setNewRoomType(e.target.value as any)} options={<><option value="Theory">Theory</option><option value="Lab">Lab</option></>} />
-        </div>
-        <div className="mt-8 flex justify-end">
-          <button onClick={handleAddRoom} className="bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-full shadow-lg shadow-gray-200 flex items-center gap-2 font-medium">
-            <Save className="w-4 h-4" /> Save Room
-          </button>
-        </div>
-      </div>
-      <DataTable 
-        items={data.rooms} 
-        fields={[{key:'roomNumber', label:'Room Number'}, {key:'type', label:'Type'}]} 
-        onDelete={(id: string) => onUpdateData({...data, rooms: data.rooms.filter(r => r.id !== id)})} 
-      />
-    </div>
-  );
-
-  const renderTeacherManager = () => (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden">
-        <div className="flex items-center gap-3 mb-8 relative">
-            <div className="bg-green-600 text-white p-2.5 rounded-xl shadow-md shadow-green-200">
-                <Plus className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xl font-medium text-gray-800">Add New Teacher</h3>
-            </div>
-        </div>
-        {errorMsg && <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-2xl text-sm">{errorMsg}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          <InputField label="Full Name" value={newTeacherName} onChange={(e: any) => setNewTeacherName(e.target.value)} placeholder="e.g. John Doe" />
-          <InputField label="Initial" value={newTeacherInitial} onChange={(e: any) => setNewTeacherInitial(e.target.value)} placeholder="JD" />
-          <InputField label="Email" value={newTeacherEmail} onChange={(e: any) => setNewTeacherEmail(e.target.value)} type="email" placeholder="john@diu.edu.bd" />
-          
-          {/* Off Days Multi-Select Replaced here */}
-          <div className="md:col-span-3">
-              <MultiSelectField 
-                label="Off Days (Select Multiple)"
-                selectedValues={newTeacherOffDays}
-                onChange={toggleOffDay}
-                options={Object.values(DayOfWeek)}
-              />
-          </div>
-          
-          {/* Counseling Hour Split Input */}
-          <div className="md:col-span-3 space-y-2 pt-2 border-t border-gray-50">
-             <label className="text-sm font-medium text-gray-700 block">Counseling Hour</label>
-             <div className="flex flex-col md:flex-row md:items-center gap-3">
-                 <div className="flex-1">
-                     <SelectField 
-                        label="Day" 
-                        value={newTeacherCounselingDay} 
-                        onChange={(e: any) => { setNewTeacherCounselingDay(e.target.value); setNewTeacherCounselingNone(false); }} 
-                        options={Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)} 
-                     />
-                 </div>
-                 <div className="flex-1">
-                     <SelectField 
-                        label="Time" 
-                        value={newTeacherCounselingTime} 
-                        onChange={(e: any) => { setNewTeacherCounselingTime(e.target.value); setNewTeacherCounselingNone(false); }} 
-                        options={TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)} 
-                     />
-                 </div>
-                 <div className="flex items-center gap-2 px-2 pt-1 md:pt-0">
-                     <input 
-                       type="checkbox" 
-                       id="cNone"
-                       checked={newTeacherCounselingNone} 
-                       onChange={(e) => { 
-                           setNewTeacherCounselingNone(e.target.checked); 
-                           if(e.target.checked) {
-                               setNewTeacherCounselingDay('');
-                               setNewTeacherCounselingTime('');
-                           }
-                       }}
-                       className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500"
-                     />
-                     <label htmlFor="cNone" className="text-sm text-gray-600">None</label>
-                 </div>
-             </div>
-          </div>
-
-        </div>
-        <div className="mt-8 flex justify-end">
-          <button onClick={handleAddTeacher} className="bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-full shadow-lg shadow-gray-200 flex items-center gap-2 font-medium">
-            <Save className="w-4 h-4" /> Save Teacher
-          </button>
-        </div>
-      </div>
-      <DataTable 
-        items={data.teachers} 
-        fields={[{key:'name', label:'Name'}, {key:'initial', label:'Initial'}, {key:'email', label:'Email'}, {key:'offDays', label:'Off Days'}, {key:'counselingHour', label:'Counseling'}]} 
-        onDelete={(id: string) => onUpdateData({...data, teachers: data.teachers.filter(x => x.id !== id)})} 
-      />
-    </div>
-  );
-
-  const renderCourseManager = () => (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden">
-        <div className="flex items-center gap-3 mb-8 relative">
-            <div className="bg-purple-600 text-white p-2.5 rounded-xl shadow-md shadow-purple-200">
-                <Plus className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xl font-medium text-gray-800">Add New Course</h3>
-            </div>
-        </div>
-        {errorMsg && <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-2xl text-sm">{errorMsg}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          <InputField label="Course Code" value={newCourseCode} onChange={(e: any) => setNewCourseCode(e.target.value)} placeholder="CSE101" />
-          <InputField label="Course Title" value={newCourseName} onChange={(e: any) => setNewCourseName(e.target.value)} placeholder="Structured Programming" />
-          <InputField label="Credits" value={newCourseCredits} onChange={(e: any) => setNewCourseCredits(e.target.value)} type="number" placeholder="3" />
-        </div>
-        <div className="mt-8 flex justify-end">
-          <button onClick={handleAddCourse} className="bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-full shadow-lg shadow-gray-200 flex items-center gap-2 font-medium">
-            <Save className="w-4 h-4" /> Save Course
-          </button>
-        </div>
-      </div>
-      <DataTable 
-        items={data.courses} 
-        fields={[{key:'code', label:'Code'}, {key:'name', label:'Title'}, {key:'credits', label:'Credits'}]} 
-        onDelete={(id: string) => onUpdateData({...data, courses: data.courses.filter(x => x.id !== id)})} 
-      />
-    </div>
-  );
-
-  const renderSectionManager = () => (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100 relative overflow-hidden">
-        <div className="flex items-center gap-3 mb-8 relative">
-            <div className="bg-pink-600 text-white p-2.5 rounded-xl shadow-md shadow-pink-200">
-                <Plus className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xl font-medium text-gray-800">Add New Section</h3>
-              <p className="text-gray-500 text-sm">Leave name empty if the Batch has no sections.</p>
-            </div>
-        </div>
-        {errorMsg && <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-2xl text-sm">{errorMsg}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          <InputField label="Batch Number" value={newSectionBatch} onChange={(e: any) => setNewSectionBatch(e.target.value)} type="number" placeholder="56" />
-          <InputField label="Section Name (Optional)" value={newSectionName} onChange={(e: any) => setNewSectionName(e.target.value)} placeholder="A" />
-          <InputField label="Total Students" value={newSectionStudents} onChange={(e: any) => setNewSectionStudents(e.target.value)} type="number" placeholder="40" />
-        </div>
-        <div className="mt-8 flex justify-end">
-          <button onClick={handleAddSection} className="bg-gray-900 hover:bg-black text-white px-8 py-3.5 rounded-full shadow-lg shadow-gray-200 flex items-center gap-2 font-medium">
-            <Save className="w-4 h-4" /> Save Section
-          </button>
-        </div>
-      </div>
-      <DataTable 
-        items={data.sections} 
-        fields={[{key:'batch', label:'Batch'}, {key:'name', label:'Name'}, {key:'studentCount', label:'Students'}]} 
-        onDelete={(id: string) => onUpdateData({...data, sections: data.sections.filter(x => x.id !== id)})} 
-      />
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-[#FDFDF6] flex flex-col md:flex-row font-sans selection:bg-blue-100">
-      <ClassModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSave={handleSaveSession}
-        data={data}
-        initialDay={modalInitialDay}
-        initialTime={modalInitialTime}
-        sessionToEdit={sessionToEdit}
-      />
-
-      <aside className="w-full md:w-80 bg-[#F8F9FA]/80 backdrop-blur-xl md:h-screen md:sticky md:top-0 p-6 border-r border-gray-200 flex flex-col z-20">
+      <ClassModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveSession} data={data} initialDay={modalInitialDay} initialTime={modalInitialTime} sessionToEdit={sessionToEdit} />
+      <aside className="w-full md:w-80 bg-white md:h-screen md:sticky md:top-0 p-6 border-r border-gray-100 flex flex-col z-20 shadow-sm">
         <div className="mb-10 pl-2 flex items-center gap-3">
-             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-200">
+             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
                 <LayoutDashboard className="w-5 h-5" />
              </div>
              <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Routine Master</h1>
-                <p className="text-xs text-gray-500 font-medium">Admin Workspace</p>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Admin Console</h1>
+                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Master Workspace</p>
              </div>
         </div>
-
         <nav className="flex-1 space-y-2">
           <NavItem id="schedule" label="Master Schedule" icon={Calendar} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
           <NavItem id="teachers" label="Teachers" icon={GraduationCap} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
@@ -706,22 +598,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
           <NavItem id="sections" label="Sections" icon={Layers} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
           <NavItem id="settings" label="Settings" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} />
         </nav>
-
-        <div className="mt-8 pt-8 border-t border-gray-200 space-y-3">
-            <button 
-              onClick={onLogout} 
-              className="w-full flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-600 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors mt-4"
-            >
-              <LogOut className="w-4 h-4" /> Exit Dashboard
-            </button>
+        <div className="mt-8 pt-8 border-t border-gray-100">
+            <button onClick={onLogout} className="w-full flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"><LogOut className="w-4 h-4" /> Exit Session</button>
         </div>
       </aside>
-
-      <main className="flex-1 p-4 md:p-8 lg:p-10 overflow-y-auto">
-        <header className="mb-8 md:hidden">
-            <h2 className="text-xl font-bold text-gray-800">Dashboard</h2>
-        </header>
-
+      <main className="flex-1 p-4 md:p-10 overflow-y-auto">
         {activeTab === 'schedule' && renderScheduler()}
         {activeTab === 'teachers' && renderTeacherManager()}
         {activeTab === 'courses' && renderCourseManager()}
