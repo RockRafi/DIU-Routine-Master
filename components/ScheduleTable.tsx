@@ -1,7 +1,6 @@
 import React from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, getBatchColor } from '../types';
-// Import X icon for deleting sessions
-import { X } from 'lucide-react';
+import { X, Calendar, Globe, Info } from 'lucide-react';
 
 interface ScheduleTableProps {
   data: AppData;
@@ -117,36 +116,61 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
     );
   };
 
+  const reportHeader = (
+    <div className="print-header">
+       <div className="flex justify-between items-end mb-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                  <Calendar className="w-6 h-6" />
+                </div>
+                <h1 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">DIU ROUTINE MASTER</h1>
+            </div>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Department of Computing and Information System (CIS)</p>
+          </div>
+          <div className="text-right">
+             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{data.settings.semesterName}</p>
+             <p className="text-[10px] font-bold text-gray-300 uppercase mt-1">Exported: {new Date().toLocaleString()}</p>
+          </div>
+       </div>
+    </div>
+  );
+
   return (
-    <div className="overflow-x-auto rounded-3xl">
-      <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse bg-white print:table">
-        <thead>
-          <tr className="bg-gray-50/70">
-            <th className="px-6 py-5 text-left text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] sticky left-0 bg-gray-50 z-20 w-28 md:w-36 border-r border-gray-200 shadow-sm print:static print:bg-white print:border">
-              DAY
-            </th>
-            {TIME_SLOTS.map(slot => (
-              <th key={slot} className="px-4 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] w-[210px] border-l border-gray-100 print:border">
-                {slot.replace(' - ', '\n')}
+    <div className="print:block overflow-visible">
+      {reportHeader}
+      <div className="overflow-x-auto rounded-3xl print:overflow-visible">
+        <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse bg-white print:table print:border-collapse print:text-black">
+          <thead>
+            <tr className="bg-gray-50/70">
+              <th className="px-6 py-5 text-left text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] sticky left-0 bg-gray-50 z-20 w-28 md:w-36 border-r border-gray-200 shadow-sm print:static print:bg-white print:border print:shadow-none">
+                DAY
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100 print:divide-black">
-          {activeDays.map(day => (
-            <tr key={day} className="hover:bg-gray-50/40 transition-colors">
-              <td className="px-6 py-8 whitespace-nowrap text-[13px] font-black text-slate-950 sticky left-0 bg-white z-10 border-r border-gray-200 uppercase tracking-[0.3em] print:static print:border">
-                {day.substring(0, 3)}
-              </td>
               {TIME_SLOTS.map(slot => (
-                <td key={`${day}-${slot}`} className="px-2 py-3 align-top min-h-[160px] border-l border-gray-50/50 print:border">
-                  {getCellContent(day, slot)}
-                </td>
+                <th key={slot} className="px-4 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] w-[210px] border-l border-gray-100 print:border print:text-center print:text-black">
+                  {slot.split(' - ').map((t, i) => (
+                    <div key={i}>{t}</div>
+                  ))}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-100 print:divide-black">
+            {activeDays.map(day => (
+              <tr key={day} className="hover:bg-gray-50/40 transition-colors">
+                <td className="px-6 py-8 whitespace-nowrap text-[13px] font-black text-slate-950 sticky left-0 bg-white z-10 border-r border-gray-200 uppercase tracking-[0.3em] print:static print:border print:bg-white print:shadow-none">
+                  {day.substring(0, 3)}
+                </td>
+                {TIME_SLOTS.map(slot => (
+                  <td key={`${day}-${slot}`} className="px-2 py-3 align-top min-h-[160px] border-l border-gray-50/50 print:border print:p-2">
+                    {getCellContent(day, slot)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
