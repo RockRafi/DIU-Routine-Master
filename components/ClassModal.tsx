@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AppData, ClassSession, DayOfWeek, TIME_SLOTS, Room } from '../types';
 import { checkConflict } from '../services/dbService';
-import { X, Save, AlertCircle, AlertTriangle, Clock, MapPin, Check, Calendar } from 'lucide-react';
+// Added ChevronDown to the lucide-react imports
+import { X, Save, AlertCircle, AlertTriangle, Clock, MapPin, Check, Calendar, Users, BookOpen, ChevronDown } from 'lucide-react';
 
 interface ClassModalProps {
   isOpen: boolean;
@@ -56,11 +57,9 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
     }
   }, [isOpen, initialDay, initialTime, sessionToEdit, data.sections]);
 
-  // Dynamically calculate truly available rooms for the chosen time slot
   const availableRooms = useMemo(() => {
     const [start] = timeSlot.split(' - ');
     return data.rooms.filter(room => {
-      // Find if this room is already booked by any OTHER session at the same time
       const isOccupied = data.schedule.some(session => 
         session.day === day && 
         session.startTime === start && 
@@ -71,13 +70,11 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
     }).sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
   }, [day, timeSlot, data.rooms, data.schedule, sessionToEdit]);
 
-  // Sections filtered by selected batch
   const filteredSections = useMemo(() => {
     if (selectedBatch === '') return [];
     return data.sections.filter(s => s.batch === Number(selectedBatch));
   }, [selectedBatch, data.sections]);
 
-  // Reset roomId if the current selection becomes invalid due to day/slot change
   useEffect(() => {
     if (roomId && !isCounseling && !availableRooms.find(r => r.id === roomId)) {
       setRoomId('');
@@ -90,7 +87,7 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
 
   const offDayWarning = useMemo(() => {
     if (teacherRef && teacherRef.offDays.includes(day)) {
-        return `${teacherRef.name} is on a designated off-day (${day}).`;
+        return `${teacherRef.name} is on a scheduled off-day (${day}).`;
     }
     return null;
   }, [teacherRef, day]);
@@ -104,12 +101,12 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
     setError(null);
 
     if (!teacherId) {
-      setError("Faculty member selection is required.");
+      setError("Please select the faculty member in charge.");
       return;
     }
 
     if (!isCounseling && (!courseId || !roomId || !selectedSectionId)) {
-      setError("Please ensure all academic fields (Course, Room, Section) are populated.");
+      setError("Academic classes require a course, room, and target section.");
       return;
     }
 
@@ -128,7 +125,7 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
 
     const conflict = checkConflict(newSession, data);
     if (conflict.hasConflict) {
-      setError(conflict.message || "A scheduling conflict was detected.");
+      setError(conflict.message);
       return;
     }
 
@@ -137,81 +134,94 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="bg-white rounded-[40px] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
-        <div className="px-10 py-7 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-[32px] w-full max-w-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[95vh]">
+        
+        {/* Header */}
+        <div className="px-6 sm:px-10 py-5 sm:py-6 border-b border-gray-100 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-blue-100 text-blue-600 rounded-xl shadow-sm">
-              <Calendar className="w-6 h-6" />
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+              <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              {sessionToEdit ? 'Adjust Assignment' : 'New Academic Entry'}
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+              {sessionToEdit ? 'Adjust Schedule' : 'Schedule New Session'}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2.5 hover:bg-red-50 hover:text-red-600 rounded-full transition-all text-gray-400">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-10 space-y-8">
+        {/* Scrollable Body */}
+        <form onSubmit={handleSubmit} className="p-6 sm:p-10 overflow-y-auto space-y-6 sm:space-y-8 custom-scrollbar">
           {error && (
-            <div className="p-5 bg-red-50 text-red-700 rounded-2xl flex items-start gap-4 text-sm border border-red-200 animate-in slide-in-from-top-3 shadow-sm">
-              <AlertCircle className="w-6 h-6 shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-0.5">
-                <span className="font-black uppercase text-[10px] tracking-widest text-red-400">Conflict Detected</span>
-                <span className="font-bold">{error}</span>
-              </div>
+            <div className="p-4 bg-red-50 text-red-700 rounded-2xl flex items-start gap-3 text-sm border border-red-100 animate-in slide-in-from-top-2">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <span className="font-medium">{error}</span>
             </div>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8">
+            {/* Day of Week */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Working Day</label>
-              <select 
-                value={day} 
-                onChange={e => setDay(e.target.value as DayOfWeek)}
-                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-8 focus:ring-blue-500/5 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all cursor-pointer"
-              >
-                {Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Day of Week</label>
+              <div className="relative">
+                <select 
+                  value={day} 
+                  onChange={e => setDay(e.target.value as DayOfWeek)}
+                  className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-gray-800 transition-all appearance-none"
+                >
+                  {Object.values(DayOfWeek).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
+            {/* Time Slot */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Assigned Time Slot</label>
-              <select 
-                value={timeSlot} 
-                onChange={e => setTimeSlot(e.target.value)}
-                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-8 focus:ring-blue-500/5 focus:border-blue-500 outline-none font-bold text-slate-800 transition-all cursor-pointer"
-              >
-                {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Preferred Time Slot</label>
+              <div className="relative">
+                <select 
+                  value={timeSlot} 
+                  onChange={e => setTimeSlot(e.target.value)}
+                  className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-gray-800 transition-all appearance-none"
+                >
+                  {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
+            {/* Faculty */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Faculty Member</label>
-              <select 
-                value={teacherId} 
-                onChange={e => setTeacherId(e.target.value)}
-                className={`w-full p-4 bg-gray-50 border-2 rounded-2xl focus:ring-8 outline-none transition-all font-bold cursor-pointer ${
-                    offDayWarning ? 'border-orange-300 ring-orange-100 text-orange-950 bg-orange-50/40' : 'border-gray-100 focus:ring-blue-500/5 focus:border-blue-500 text-slate-800'
-                }`}
-              >
-                <option value="" disabled>Select Faculty</option>
-                {data.teachers.map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} [{t.initial}] {t.offDays.includes(day) ? '⚠️ OFF' : ''}
-                  </option>
-                ))}
-              </select>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Faculty In-Charge</label>
+              <div className="relative">
+                <select 
+                  value={teacherId} 
+                  onChange={e => setTeacherId(e.target.value)}
+                  className={`w-full p-3.5 bg-gray-50 border rounded-2xl focus:ring-4 outline-none transition-all font-bold appearance-none ${
+                      offDayWarning ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100'
+                  }`}
+                >
+                  <option value="" disabled>Search Faculty</option>
+                  {data.teachers.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.initial}) {t.offDays.includes(day) ? '• OFF' : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
               {offDayWarning && (
-                <p className="text-[10px] text-orange-600 font-black uppercase mt-2 ml-1 flex items-center gap-2 animate-pulse">
-                  <AlertTriangle className="w-4 h-4" /> {offDayWarning}
+                <p className="text-[10px] text-amber-600 font-bold uppercase mt-1.5 flex items-center gap-1.5 px-1">
+                  <AlertTriangle className="w-3.5 h-3.5" /> {offDayWarning}
                 </p>
               )}
             </div>
 
-            <div className="flex flex-col justify-end pb-3">
-                <label className="flex items-center gap-4 cursor-pointer group p-3 rounded-2xl hover:bg-blue-50 transition-all border-2 border-transparent hover:border-blue-100">
+            {/* Counseling Toggle */}
+            <div className="flex flex-col justify-center">
+                <label className="flex items-center gap-3 cursor-pointer group p-3 rounded-2xl hover:bg-blue-50/50 transition-all border border-transparent hover:border-blue-100/50">
                   <div className="relative">
                     <input 
                       type="checkbox" 
@@ -219,81 +229,94 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
                       onChange={e => setIsCounseling(e.target.checked)}
                       className="peer sr-only"
                     />
-                    <div className="w-7 h-7 border-2 border-gray-300 rounded-xl group-hover:border-blue-400 peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center shadow-sm">
-                      <Check className={`w-5 h-5 text-white transition-transform ${isCounseling ? 'scale-100' : 'scale-0'}`} strokeWidth={4} />
+                    <div className="w-6 h-6 border-2 border-gray-300 rounded-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center">
+                      <Check className={`w-4 h-4 text-white transition-transform ${isCounseling ? 'scale-100' : 'scale-0'}`} strokeWidth={3} />
                     </div>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-black text-slate-800 group-hover:text-blue-700 transition-colors uppercase tracking-tighter">Counseling Slot</span>
-                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Exclude room/batch requirements</span>
+                    <span className="text-sm font-bold text-gray-700 group-hover:text-blue-700">Mark as Counseling Hour</span>
+                    <span className="text-[10px] text-gray-400 uppercase tracking-tight">Disables room & section requirements</span>
                   </div>
                 </label>
             </div>
 
-            <div className={`space-y-2 transition-all duration-300 ${isCounseling ? 'opacity-25 grayscale pointer-events-none' : 'opacity-100'}`}>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Target Batch</label>
-              <select 
-                value={selectedBatch} 
-                onChange={e => {
-                  setSelectedBatch(Number(e.target.value));
-                  setSelectedSectionId('');
-                }}
-                disabled={isCounseling}
-                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-8 focus:ring-blue-500/5 focus:border-blue-500 outline-none font-bold text-slate-800 cursor-pointer"
-              >
-                <option value="" disabled>Select Batch</option>
-                {uniqueBatches.map(b => <option key={b} value={b}>Batch {b}</option>)}
-              </select>
+            {/* Academic Batch */}
+            <div className={`space-y-2 transition-all ${isCounseling ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Academic Batch</label>
+              <div className="relative">
+                <select 
+                  value={selectedBatch} 
+                  onChange={e => {
+                    setSelectedBatch(Number(e.target.value));
+                    setSelectedSectionId('');
+                  }}
+                  disabled={isCounseling}
+                  className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-gray-800 appearance-none"
+                >
+                  <option value="" disabled>Select Batch</option>
+                  {uniqueBatches.map(b => <option key={b} value={b}>Batch {b}</option>)}
+                </select>
+                <Users className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
-            <div className={`space-y-2 transition-all duration-300 ${isCounseling ? 'opacity-25 grayscale pointer-events-none' : 'opacity-100'}`}>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Active Section</label>
-              <select 
-                value={selectedSectionId} 
-                onChange={e => setSelectedSectionId(e.target.value)}
-                disabled={!selectedBatch || isCounseling}
-                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-8 focus:ring-blue-500/5 focus:border-blue-500 outline-none font-bold text-slate-800 disabled:bg-gray-100 disabled:opacity-50 cursor-pointer"
-              >
-                <option value="" disabled>Select Section</option>
-                {filteredSections.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name ? `Section ${s.name}` : `Entire Batch ${s.batch}`}
-                  </option>
-                ))}
-              </select>
+            {/* Target Section */}
+            <div className={`space-y-2 transition-all ${isCounseling ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Target Section</label>
+              <div className="relative">
+                <select 
+                  value={selectedSectionId} 
+                  onChange={e => setSelectedSectionId(e.target.value)}
+                  disabled={!selectedBatch || isCounseling}
+                  className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-gray-800 disabled:bg-gray-100 appearance-none"
+                >
+                  <option value="" disabled>Select Section</option>
+                  {filteredSections.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name ? `Section ${s.name}` : `Core (Batch ${s.batch})`}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
-            <div className={`space-y-2 transition-all duration-300 ${isCounseling ? 'opacity-25 grayscale pointer-events-none' : 'opacity-100'}`}>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Course Assignment</label>
-              <select 
-                value={courseId} 
-                onChange={e => setCourseId(e.target.value)}
-                disabled={isCounseling}
-                className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:ring-8 focus:ring-blue-500/5 focus:border-blue-500 outline-none font-bold text-slate-800 disabled:bg-gray-100 cursor-pointer"
-              >
-                <option value="" disabled>Select Catalog Course</option>
-                {data.courses.map(c => (
-                  <option key={c.id} value={c.id}>{c.code}: {c.name}</option>
-                ))}
-              </select>
+            {/* Course Assignment */}
+            <div className={`space-y-2 transition-all ${isCounseling ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Assign Course</label>
+              <div className="relative">
+                <select 
+                  value={courseId} 
+                  onChange={e => setCourseId(e.target.value)}
+                  disabled={isCounseling}
+                  className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-bold text-gray-800 disabled:bg-gray-100 appearance-none"
+                >
+                  <option value="" disabled>Search Catalog</option>
+                  {data.courses.map(c => (
+                    <option key={c.id} value={c.id}>{c.code}: {c.shortName}</option>
+                  ))}
+                </select>
+                <BookOpen className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
 
-            <div className={`space-y-2 transition-all duration-300 ${isCounseling ? 'opacity-25 grayscale pointer-events-none' : 'opacity-100'}`}>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Room Allocation</label>
+            {/* Room Allocation */}
+            <div className={`space-y-2 transition-all ${isCounseling ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">Classroom / Lab</label>
               <div className="relative">
                 <select 
                   value={roomId} 
                   onChange={e => setRoomId(e.target.value)}
                   disabled={isCounseling || availableRooms.length === 0}
-                  className={`w-full p-4 pl-12 border-2 rounded-2xl focus:ring-8 outline-none transition-all font-bold cursor-pointer ${
+                  className={`w-full p-3.5 bg-gray-50 border rounded-2xl focus:ring-4 outline-none transition-all font-bold appearance-none ${
                     !isCounseling && availableRooms.length === 0 
-                      ? 'bg-red-50 border-red-300 text-red-700 ring-red-100' 
-                      : 'bg-gray-50 border-gray-100 focus:ring-blue-500/5 focus:border-blue-500 text-slate-800'
+                      ? 'border-red-200 text-red-700 bg-red-50/50' 
+                      : 'border-gray-100 text-gray-800'
                   } disabled:bg-gray-100`}
                 >
                   {availableRooms.length > 0 ? (
                     <>
-                      <option value="" disabled>Choose Vacant Room</option>
+                      <option value="" disabled>Select Vacant Room</option>
                       {availableRooms.map(r => (
                         <option key={r.id} value={r.id}>{r.roomNumber} ({r.type})</option>
                       ))}
@@ -302,34 +325,31 @@ const ClassModal: React.FC<ClassModalProps> = ({ isOpen, onClose, onSave, data, 
                     <option value="">No rooms available for this time slot</option>
                   )}
                 </select>
-                <MapPin className={`absolute left-4.5 top-4.5 w-5 h-5 ${!isCounseling && availableRooms.length === 0 ? 'text-red-400' : 'text-gray-400'}`} />
+                <MapPin className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 ${!isCounseling && availableRooms.length === 0 ? 'text-red-400' : 'text-gray-400'} pointer-events-none`} />
               </div>
-              {!isCounseling && availableRooms.length === 0 && (
-                <p className="text-[10px] text-red-600 font-black uppercase mt-2 ml-1 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" /> Overbooked: No rooms available for this time slot
-                </p>
-              )}
             </div>
           </div>
-
-          <div className="pt-8 flex justify-end gap-5 border-t border-gray-100">
-            <button 
-              type="button" 
-              onClick={onClose}
-              className="px-10 py-4 text-sm font-bold text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              disabled={!isCounseling && availableRooms.length === 0}
-              className="px-12 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-2xl shadow-blue-500/30 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 group"
-            >
-              <Save className="w-5 h-5 group-hover:scale-110 transition-transform" /> 
-              {isCounseling ? 'Confirm Counseling' : (sessionToEdit ? 'Save Changes' : 'Finalize Assignment')}
-            </button>
-          </div>
         </form>
+
+        {/* Footer */}
+        <div className="px-6 sm:px-10 py-6 border-t border-gray-100 bg-gray-50/50 flex flex-col-reverse sm:flex-row justify-end gap-3 shrink-0">
+          <button 
+            type="button" 
+            onClick={onClose}
+            className="w-full sm:w-auto px-8 py-3.5 text-sm font-bold text-gray-500 hover:text-gray-900 transition-all rounded-full"
+          >
+            Discard Changes
+          </button>
+          <button 
+            type="submit"
+            onClick={handleSubmit}
+            disabled={!isCounseling && availableRooms.length === 0}
+            className="w-full sm:w-auto px-10 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Save className="w-4 h-4" /> 
+            {sessionToEdit ? 'Confirm Update' : 'Confirm Schedule'}
+          </button>
+        </div>
       </div>
     </div>
   );

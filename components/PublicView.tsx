@@ -4,7 +4,7 @@ import ScheduleTable from './ScheduleTable';
 import { 
   Search, User, Users, Calendar, ShieldCheck, ChevronDown, 
   Download, AlertTriangle, Clock, MapPin, CheckCircle2, 
-  LayoutGrid, Mail, Info, ArrowLeft, Filter, GraduationCap, Layers, Globe
+  LayoutGrid, Mail, Info, ArrowLeft, Filter, GraduationCap, Layers, Globe, Printer
 } from 'lucide-react';
 
 interface PublicViewProps {
@@ -89,7 +89,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
     const activeViewDay = isMaster ? undefined : (utilityTab === 'today' ? (today as DayOfWeek) : selectedDay);
 
     return (
-      <div className="animate-in slide-in-from-top-4 fade-in duration-500 mb-12 bg-white/95 backdrop-blur-xl rounded-[32px] border border-gray-200 p-6 md:p-8 no-print shadow-sm">
+      <div className="animate-in slide-in-from-top-4 fade-in duration-500 mb-12 bg-white rounded-[32px] border border-gray-200 p-6 md:p-8 no-print shadow-none">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
                <div className="flex items-center gap-5">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${utilityTab === 'today' ? 'bg-blue-600 text-white' : utilityTab === 'master' ? 'bg-gray-900 text-white' : 'bg-purple-600 text-white'}`}>
@@ -97,10 +97,10 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                     </div>
                     <div>
                         <h3 className="text-xl font-bold text-gray-900 tracking-tight">
-                          {utilityTab === 'today' ? "Today's Status" : utilityTab === 'master' ? "Department Master Routine" : `Schedule Search: ${activeViewDay}`}
+                          {utilityTab === 'today' ? "Today's Live Feed" : utilityTab === 'master' ? "Department Master Routine" : `Search by Day: ${activeViewDay}`}
                         </h3>
                         <div className="flex items-center gap-3 mt-1">
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{isMaster ? "Full Weekly Distribution" : activeViewDay}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{isMaster ? "Academic Master Distribution" : activeViewDay}</p>
                         </div>
                     </div>
                </div>
@@ -112,7 +112,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                                 <button 
                                     key={d} 
                                     onClick={() => setSelectedDay(d)}
-                                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all ${selectedDay === d ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold transition-all ${selectedDay === d ? 'bg-white text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
                                 >
                                     {d.substring(0,3)}
                                 </button>
@@ -123,13 +123,13 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                     <div className="flex bg-gray-100 p-1 rounded-full border border-gray-200">
                         <button 
                             onClick={() => setShowFreeRooms(false)}
-                            className={`px-6 py-2 rounded-full text-[10px] font-bold transition-all ${!showFreeRooms ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}
+                            className={`px-6 py-2 rounded-full text-[10px] font-bold transition-all ${!showFreeRooms ? 'bg-white text-blue-600' : 'text-gray-400'}`}
                         >
                             Routine
                         </button>
                         <button 
                             onClick={() => setShowFreeRooms(true)}
-                            className={`px-6 py-2 rounded-full text-[10px] font-bold transition-all ${showFreeRooms ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-400'}`}
+                            className={`px-6 py-2 rounded-full text-[10px] font-bold transition-all ${showFreeRooms ? 'bg-emerald-600 text-white' : 'text-gray-400'}`}
                         >
                             Free Rooms
                         </button>
@@ -137,14 +137,14 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                </div>
             </div>
             
-            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
                 <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b border-gray-200">
                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                       <Info className="w-3.5 h-3.5" /> Distribution Matrix
+                       <Info className="w-3.5 h-3.5" /> DIU Academic Board
                    </span>
                    {isMaster && (
-                     <button onClick={handleExportPDF} className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-full text-[10px] font-bold hover:bg-black transition-all shadow-md">
-                        <Download className="w-3.5 h-3.5" /> MASTER ROUTINE DOWNLOAD
+                     <button onClick={handleExportPDF} className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-full text-[10px] font-bold hover:bg-black transition-all">
+                        <Printer className="w-3.5 h-3.5" /> EXPORT PROFESSIONAL TABLE
                      </button>
                    )}
                 </div>
@@ -180,7 +180,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
       <header className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-gray-100 no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+             <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center">
                <Calendar className="w-5 h-5" />
              </div>
              <span className="text-lg font-bold text-[#1e293b] tracking-tight">Routine Master</span>
@@ -188,7 +188,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
           <div className="flex items-center gap-4">
               <button 
                 onClick={() => setUtilityTab(utilityTab === 'master' ? 'today' : 'master')} 
-                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all ${utilityTab === 'master' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-blue-600'}`}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all border ${utilityTab === 'master' ? 'bg-gray-900 text-white border-gray-900' : 'text-gray-600 border-transparent hover:border-gray-200'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
                 <span className="hidden sm:inline">Master Routine</span>
@@ -207,15 +207,14 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                    <AlertTriangle className="w-10 h-10" />
                </div>
                <h1 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">System Updating</h1>
-               <p className="text-gray-500 max-w-lg mx-auto text-lg leading-relaxed">The CIS academic office is currently syncing the {data.settings.semesterName} schedule.</p>
+               <p className="text-gray-500 max-w-lg mx-auto text-lg leading-relaxed">Syncing latest {data.settings.semesterName} distribution...</p>
           </main>
       ) : (
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 relative z-10">
         
-        {/* --- Hero Section Refined to Match Design Image --- */}
         <div className="text-center mb-16 animate-in slide-in-from-bottom-8 fade-in duration-1000 no-print">
           <div className="inline-block mb-6 px-5 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold tracking-widest uppercase border border-blue-100">
-            {data.settings.semesterName.toUpperCase()} SCHEDULE
+            {data.settings.semesterName.toUpperCase()}
           </div>
           
           <h1 className="text-[56px] md:text-[84px] font-bold text-[#1e293b] mb-4 tracking-tighter leading-tight">
@@ -223,28 +222,28 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
           </h1>
           
           <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10 font-medium">
-            Academic resource distribution and weekly scheduling for DIU CIS Department.
+            Academic resource distribution and class schedule mapping.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
-              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-full text-[11px] font-bold text-gray-500 uppercase tracking-widest shadow-sm">
+              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-full text-[11px] font-bold text-gray-500 uppercase tracking-widest">
                   <Clock className="w-4 h-4 text-blue-500" /> {fullCurrentDate}
               </div>
-              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-full text-[11px] font-bold text-gray-400 uppercase tracking-widest shadow-sm">
-                  <Info className="w-4 h-4 text-gray-300" /> LAST UPDATED: {data.lastModified?.toUpperCase() || 'READY'}
+              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-full text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                  <Info className="w-4 h-4 text-gray-300" /> LAST SYNC: {data.lastModified?.toUpperCase() || 'LIVE'}
               </div>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 px-4">
               <button 
                   onClick={() => setUtilityTab('today')}
-                  className="w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 bg-blue-600 text-white rounded-[24px] text-base font-bold transition-all hover:bg-blue-700 hover:scale-105 shadow-2xl shadow-blue-500/20"
+                  className={`w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 rounded-[24px] text-base font-bold transition-all border-2 ${utilityTab === 'today' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-[#1e293b] border-gray-200 hover:border-blue-400'}`}
               >
                   <Clock className="w-5 h-5" /> Quick Today
               </button>
               <button 
                   onClick={() => setUtilityTab('filter')}
-                  className="w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 bg-white text-[#1e293b] border border-gray-200 rounded-[24px] text-base font-bold transition-all hover:border-blue-400 hover:scale-105 shadow-sm"
+                  className={`w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 rounded-[24px] text-base font-bold transition-all border-2 ${utilityTab === 'filter' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-[#1e293b] border-gray-200 hover:border-purple-400'}`}
               >
                   <Filter className="w-5 h-5" /> Search By Day
               </button>
@@ -261,15 +260,15 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
             <div className="bg-gray-100 p-1.5 rounded-full inline-flex border border-gray-200">
               <button
                 onClick={() => { setViewMode('student'); setSelectedId(''); }}
-                className={`px-10 py-3 rounded-full text-xs font-bold transition-all flex items-center gap-3 ${viewMode === 'student' ? 'text-gray-900 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`px-10 py-3 rounded-full text-xs font-bold transition-all flex items-center gap-3 ${viewMode === 'student' ? 'text-gray-900 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                <Users className="w-4 h-4" /> Student Profile
+                <Users className="w-4 h-4" /> Student Portal
               </button>
               <button
                 onClick={() => { setViewMode('teacher'); setSelectedId(''); }}
-                className={`px-10 py-3 rounded-full text-xs font-bold transition-all flex items-center gap-3 ${viewMode === 'teacher' ? 'text-gray-900 bg-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                className={`px-10 py-3 rounded-full text-xs font-bold transition-all flex items-center gap-3 ${viewMode === 'teacher' ? 'text-gray-900 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                <GraduationCap className="w-4 h-4" /> Faculty Hub
+                <GraduationCap className="w-4 h-4" /> Faculty Portal
               </button>
             </div>
           </div>
@@ -282,13 +281,13 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                 <select
                 value={selectedId}
                 onChange={(e) => setSelectedId(e.target.value)}
-                className="block w-full h-16 pl-14 pr-12 text-lg font-bold bg-white/90 backdrop-blur-xl border border-gray-200 rounded-[24px] appearance-none focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer hover:border-gray-300 shadow-sm"
+                className="block w-full h-16 pl-14 pr-12 text-lg font-bold bg-white/90 border border-gray-200 rounded-[24px] appearance-none focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer hover:border-gray-300"
                 >
-                <option value="" disabled hidden>Select {viewMode === 'student' ? 'Batch/Section' : 'Faculty Name'}</option>
+                <option value="" disabled hidden>Select {viewMode === 'student' ? 'Batch / Section' : 'Faculty Name'}</option>
                 {viewMode === 'student' ? (
                     Object.entries(sectionsByBatch).map(([batch, sections]) => (
-                    <optgroup key={batch} label={`📅 Batch ${batch}`}>
-                        <option value={`batch-${batch}`}>👥 Entire Batch {batch}</option>
+                    <optgroup key={batch} label={`Batch ${batch}`}>
+                        <option value={`batch-${batch}`}>👥 Batch {batch} (Full)</option>
                         {(sections as Section[]).map(s => <option key={s.id} value={s.id}>📍 Section {s.name ? s.name : 'Core'} (Batch {s.batch})</option>)}
                     </optgroup>
                     ))
@@ -304,9 +303,9 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
         </div>
 
         {/* --- Result Table --- */}
-        <div ref={routineRef} className="scroll-mt-24 px-2 md:px-0">
+        <div id="print-area" ref={routineRef} className="scroll-mt-24 px-2 md:px-0">
           {selectedId ? (
-            <div className="bg-white border border-gray-100 rounded-[40px] p-6 md:p-14 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-xl shadow-blue-900/5">
+            <div className="bg-white border border-gray-100 rounded-[40px] p-6 md:p-14 animate-in fade-in slide-in-from-bottom-8 duration-700">
               <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-8">
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -316,22 +315,22 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
                     <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter leading-none">{displayTitle}</h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 no-print">
-                   <button onClick={handleExportPDF} className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-10 py-3.5 bg-gray-900 text-white rounded-full text-sm font-bold hover:bg-black transition-all shadow-lg shadow-gray-200">
-                        <Download className="w-4 h-4" /> SAVE PDF
+                   <button onClick={handleExportPDF} className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-10 py-3.5 bg-gray-900 text-white rounded-full text-sm font-bold hover:bg-black transition-all">
+                        <Printer className="w-4 h-4" /> EXPORT PRINT-READY TABLE
                    </button>
                 </div>
               </div>
               
-              <div className="rounded-[24px] border border-gray-100 overflow-hidden shadow-inner bg-gray-50/50 overflow-x-auto custom-scrollbar">
+              <div className="rounded-[24px] border border-gray-100 overflow-hidden bg-gray-50/50 overflow-x-auto custom-scrollbar">
                 <ScheduleTable data={data} filterType={filterType} filterId={filterValue} />
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-32 animate-in fade-in duration-1000 no-print">
-              <div className="w-24 h-24 bg-white border border-gray-100 rounded-full flex items-center justify-center mb-8 shadow-sm">
+              <div className="w-24 h-24 bg-white border border-gray-100 rounded-full flex items-center justify-center mb-8">
                 <Search className="w-8 h-8 text-gray-100" />
               </div>
-              <h3 className="text-[10px] font-bold text-gray-200 text-center uppercase tracking-[0.5em]">Awaiting selection to display routine</h3>
+              <h3 className="text-[10px] font-bold text-gray-200 text-center uppercase tracking-[0.5em]">Awaiting Selection</h3>
             </div>
           )}
         </div>
@@ -343,7 +342,7 @@ const PublicView: React.FC<PublicViewProps> = ({ data, onAdminClick }) => {
             DAFFODIL INTERNATIONAL UNIVERSITY &bull; CIS DEPARTMENT
         </p>
         <p className="text-[9px] text-gray-300 uppercase tracking-[0.2em]">
-            &copy; {new Date().getFullYear()} DIU Routine Board v2.8 Design Refresh
+            &copy; {new Date().getFullYear()} DIU Routine Board v3.0 Flat Design
         </p>
       </footer>
     </div>

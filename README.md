@@ -1,80 +1,50 @@
-# DIU Routine Master
+# DIU Routine Master v3.0
 
 **Department of Computing and Information System (CIS)**  
 **Daffodil International University (DIU)**
 
 ## Project Overview
-The **DIU Routine Master** is a specialized web-based application developed to digitize and streamline the academic scheduling process for the CIS department. It replaces manual scheduling methods with an intelligent, conflict-aware system that manages class routines, resource allocation, and schedule distribution.
+The **DIU Routine Master** is a high-performance, responsive academic scheduling platform built for the DIU CIS department. It leverages modern frontend design principles to provide a seamless routine management experience for both students and administrators. Version 3.0 introduces a refined **Material 3 Flat Design** aesthetic and enhanced responsive capabilities.
 
-## Key Features
+## Core Features
 
-### 1. Public Schedule Portal
-- **Student View**: Students can quickly find their weekly class routine by selecting their specific Section (e.g., Section A, Batch 56).
-- **Teacher View**: Faculty members can filter the master schedule to see only their assigned classes.
-- **PDF Export**: Users can generate a clean, print-friendly PDF of any selected routine with a single click via the browser's native print engine with custom print-specific CSS.
+### 1. Unified Academic Portal
+- **Student Focus**: Intuitive selection of Batch/Section to retrieve personalized weekly routines.
+- **Faculty View**: Real-time filtering of schedules by individual teacher initials to see specific teaching loads.
+- **Smart Today Board**: A "Live Feed" component that instantly displays classes for the current day across the entire department.
+- **Free Room Finder**: Dynamic resource tracking that shows vacant classrooms for any specific time slot.
 
-### 2. Administrative Dashboard
-- **Secure Access**: Protected via client-side authentication (Username: `admin`, Password: `admin123`).
-- **Resource Management**: Complete control to Add, Edit, or Remove:
-  - **Teachers**: Manage faculty profiles, initials, off-days, and counseling hours.
-  - **Courses**: Update curriculum offerings, codes, and credits.
-  - **Rooms**: Manage classroom and lab allocations with type (Lab/Theory) distinction.
-  - **Sections**: Organize student batches and section names.
-- **Visual Scheduler**: An intuitive interface utilizing HTML5 Drag and Drop to assign and move classes across time slots.
+### 2. High-Fidelity Administrative Console
+- **Fixed-Rail Navigation**: A persistent side menu for rapid switching between schedule, faculty, course, and room management.
+- **Drag-and-Drop Scheduler**: A desktop-first interactive board for assigning, moving, and updating class sessions visually.
+- **Resource Directory**: Centralized management of:
+  - **Faculty Profiles**: Emails, contact info, and designated off-days.
+  - **Course Catalog**: Code, Title, Short-forms, and Credit mapping.
+  - **Physical Resources**: Room numbers with distinct Laboratory vs Theory designations.
+  - **Batching**: Organization of student batches and section distributions.
 
-### 3. Smart Conflict Detection
-The system includes a robust validation engine that prevents scheduling errors before they happen. It automatically checks for:
-- **Teacher Conflicts**: Ensures a teacher is not assigned to two classes simultaneously.
-- **Room Overlaps**: Prevents booking the same room for multiple sections at the same time.
-- **Section Double-Booking**: Guarantees a student batch isn't expected to be in two places at once.
-- **Off-Day Constraints**: Alerts if a class is scheduled on a teacher's designated off-day.
+### 3. Professional Export Engine
+- **Fine Table Output**: Unlike simple screenshots, the export function utilizes specialized CSS media queries to generate a professional, high-contrast academic table.
+- **Print-Optimized**: Automatic removal of UI elements (buttons, headers) and conversion to black-and-white for clarity in physical distribution.
 
-## Technical Details
+### 4. Conflict-Aware Scheduling Logic
+The platform features an automated validation engine that guards against:
+- **Time Overlaps**: Preventing teachers or rooms from being double-booked.
+- **Off-Day Protection**: Warning admins if a class is placed on a teacher's scheduled day-off.
+- **Resource Capacity**: Visual indicators for room saturation at any given time slot.
 
-### Architecture & Stack
-This is a **Single Page Application (SPA)** built entirely with modern frontend technologies. It operates client-side without a traditional backend database, ensuring speed and portability.
+## Technical Architecture
 
-- **Frontend Framework**: [React.js v19](https://react.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/) for robust type safety and interface definitions.
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) for utility-first, responsive design and print layout controls.
-- **Icons**: [Lucide React](https://lucide.dev/) for consistent UI iconography.
-- **Build/Runtime**: Standard ES Modules via browser import maps (no complex bundler configuration required for this demo environment).
+- **Stack**: React 19 (SPA Architecture) + TypeScript.
+- **UI Design**: Tailwind CSS implementing Material 3 Flat principles (Zero-shadow depth, rich color accents).
+- **Icons**: Lucide React.
+- **State Management**: Real-time updates with browser `localStorage` persistence.
+- **Responsiveness**: Mobile-first design with slidable data grids and adaptive form modals.
 
-### Data Management
-- **Persistence**: Data is persisted using the browser's `localStorage` API. This allows the state (teachers, schedule, rooms) to remain available across page reloads without a server database.
-- **Data Models** (`types.ts`):
-  - `AppData`: The root state object containing all collections.
-  - `ClassSession`: Represents a single scheduled class, linking `teacherId`, `courseId`, `roomId`, and `sectionId`.
-
-### Core Functions & Services
-
-#### 1. Conflict Detection Engine (`services/dbService.ts`)
-The `checkConflict(newSession, data)` function is the heart of the system's logic. It iterates through the existing schedule to validate:
-```typescript
-// Pseudocode logic
-if (existingSession.time === newSession.time) {
-   if (existingSession.teacher === newSession.teacher) throw "Teacher Conflict";
-   if (existingSession.room === newSession.room) throw "Room Occupied";
-   if (existingSession.section === newSession.section) throw "Batch Busy";
-}
-```
-
-#### 2. Drag and Drop Logic (`components/ScheduleGrid.tsx`)
-Implements the native HTML5 Drag and Drop API:
-- `draggable` attributes on session blocks.
-- `onDragStart`: Captures the Session ID.
-- `onDrop`: Transmits the Session ID to the target time slot/day.
-- The parent component (`AdminDashboard`) handles the state update and conflict validation upon drop.
-
-#### 3. Filtering & Views (`components/PublicView.tsx` & `ScheduleTable.tsx`)
-Uses high-performance array filtering to derive views:
-- **Batch Grouping**: Reduces the raw list of sections into intuitive Batch groups (e.g., "Batch 56" containing Section A and B).
-- **Dynamic Filtering**: The `ScheduleTable` component accepts a `filterType` prop to render specific slices of the master schedule (by Teacher ID, Section ID, or Room ID) instantly.
-
-## Access Credentials
-For demonstration and administrative purposes:
+## Administration
+Access the administrative console via the "Admin Access" link in the header:
 - **Username**: `admin`
 - **Password**: `admin123`
 
 ---
-*Developed for the CIS Department, DIU.*
+*Developed by the CIS Academic Office, DIU.*

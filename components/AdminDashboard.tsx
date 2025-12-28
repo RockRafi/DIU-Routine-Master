@@ -12,7 +12,7 @@ const SelectField = ({ label, value, onChange, options }: any) => (
     <select 
       value={value} 
       onChange={onChange}
-      className="block w-full h-14 pl-4 pr-10 text-base bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm hover:border-gray-300 pt-1"
+      className="block w-full h-14 pl-4 pr-10 text-base bg-white border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-none hover:border-gray-300 pt-1"
     >
       <option value="" disabled hidden></option>
       {options}
@@ -45,7 +45,7 @@ const MultiSelectField = ({ label, selectedValues, onChange, options }: { label:
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="block w-full h-14 pl-4 pr-10 text-left bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm hover:border-gray-300 relative"
+        className="block w-full h-14 pl-4 pr-10 text-left bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-none hover:border-gray-300 relative"
       >
         <span className={`block truncate pt-1 ${selectedValues.length === 0 ? 'text-transparent' : 'text-gray-900'}`}>
            {selectedValues.length > 0 ? selectedValues.join(', ') : 'Select...'}
@@ -59,7 +59,7 @@ const MultiSelectField = ({ label, selectedValues, onChange, options }: { label:
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-none max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
           {options.map((option) => {
              const isSelected = selectedValues.includes(option);
              return (
@@ -88,7 +88,7 @@ const InputField = ({ label, value, onChange, type = "text", placeholder = " " }
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="block w-full h-14 pl-4 pr-4 text-base bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm hover:border-gray-300 placeholder-transparent pt-1"
+      className="block w-full h-14 pl-4 pr-4 text-base bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-none hover:border-gray-300 placeholder-transparent pt-1"
     />
     <label className={`absolute left-4 px-1 bg-white text-gray-500 transition-all duration-200 pointer-events-none rounded-sm ${value ? '-top-2.5 text-xs text-blue-600 font-medium' : 'top-4 text-base'}`}>
       {label}
@@ -101,7 +101,7 @@ const NavItem = ({ id, label, icon: Icon, activeTab, setActiveTab, setErrorMsg, 
     onClick={() => { setActiveTab(id); setErrorMsg(null); if(onClose) onClose(); }}
     className={`w-full flex items-center gap-3 px-6 py-3.5 rounded-full font-medium transition-all duration-200 mb-1 ${
       activeTab === id 
-        ? 'bg-blue-100/80 text-blue-900 shadow-sm' 
+        ? 'bg-blue-100/80 text-blue-900' 
         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
     }`}
   >
@@ -111,7 +111,7 @@ const NavItem = ({ id, label, icon: Icon, activeTab, setActiveTab, setErrorMsg, 
 );
 
 const DataTable = ({ items, fields, onDelete, onEdit, emptyMessage = "No records found." }: any) => (
-  <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden">
+  <div className="bg-white rounded-[32px] shadow-none border border-gray-100 overflow-hidden">
       <div className="px-8 py-6 bg-white border-b border-gray-100 flex justify-between items-center">
           <div>
             <h3 className="text-xl font-medium text-gray-800">Directory Listing</h3>
@@ -308,7 +308,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
   };
 
   const resetTeacherForm = () => {
-    setNewTeacherName(''); setNewTeacherInitial(''); setNewTeacherEmail(''); setNewTeacherPhone(''); setNewTeacherOffDays([]); setEditingTeacherId(null);
+    setNewTeacherName(''); setNewTeacherInitial(''); setNewTeacherInitial(''); setNewTeacherEmail(''); setNewTeacherPhone(''); setNewTeacherOffDays([]); setEditingTeacherId(null);
   };
 
   const handleEditTeacher = (t: Teacher) => {
@@ -413,7 +413,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const renderScheduler = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-[24px] shadow-none border border-gray-100 gap-4">
             <div className="flex items-center gap-4">
                 <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
                     <Calendar className="w-6 h-6 text-blue-600" />
@@ -430,7 +430,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
                <button onClick={() => window.print()} className="flex-1 md:flex-none bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors">
                  <Printer className="w-4 h-4" /> Print View
                </button>
-               <button onClick={() => handleOpenModal()} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors shadow-lg shadow-blue-200">
+               <button onClick={() => handleOpenModal()} className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center justify-center gap-2 text-sm font-medium transition-colors">
                  <Plus className="w-4 h-4" /> New Session
                </button>
             </div>
@@ -443,7 +443,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const renderTeacherManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingTeacherId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] border transition-all ${editingTeacherId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
             <h3 className="text-xl font-bold text-gray-800 mb-6">{editingTeacherId ? 'Update Faculty Member' : 'Register New Faculty'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <InputField label="Full Name" value={newTeacherName} onChange={(e: any) => setNewTeacherName(e.target.value)} />
@@ -455,7 +455,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             {errorMsg && activeTab === 'teachers' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
             <div className="mt-8 flex justify-end gap-3">
                 {editingTeacherId && <button onClick={resetTeacherForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
-                <button onClick={handleSaveTeacher} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingTeacherId ? 'Update Record' : 'Add Teacher'}</button>
+                <button onClick={handleSaveTeacher} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors">{editingTeacherId ? 'Update Record' : 'Add Teacher'}</button>
             </div>
         </div>
         <DataTable items={data.teachers} fields={[{ key: 'name', label: 'Name' }, { key: 'initial', label: 'Initial' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Phone' }, { key: 'offDays', label: 'Off Days' }]} onEdit={handleEditTeacher} onDelete={(id: string) => onUpdateData({ ...data, teachers: data.teachers.filter(t => t.id !== id), schedule: data.schedule.filter(s => s.teacherId !== id), lastModified: formatDate(new Date()) })} />
@@ -464,7 +464,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const renderCourseManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingCourseId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] border transition-all ${editingCourseId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
             <h3 className="text-xl font-bold text-gray-800 mb-6">{editingCourseId ? 'Update Course Details' : 'Course Cataloging'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <InputField label="Course Code" value={newCourseCode} onChange={(e: any) => setNewCourseCode(e.target.value)} placeholder="CSE101" />
@@ -475,7 +475,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             {errorMsg && activeTab === 'courses' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
             <div className="mt-8 flex justify-end gap-3">
                 {editingCourseId && <button onClick={resetCourseForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
-                <button onClick={handleSaveCourse} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingCourseId ? 'Update Catalog' : 'Register Course'}</button>
+                <button onClick={handleSaveCourse} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors">{editingCourseId ? 'Update Catalog' : 'Register Course'}</button>
             </div>
         </div>
         <DataTable items={data.courses} fields={[{ key: 'shortName', label: 'Short Form' }, { key: 'code', label: 'Code' }, { key: 'name', label: 'Title' }, { key: 'credits', label: 'Credits' }]} onEdit={handleEditCourse} onDelete={(id: string) => onUpdateData({ ...data, courses: data.courses.filter(c => c.id !== id), schedule: data.schedule.filter(s => s.courseId !== id), lastModified: formatDate(new Date()) })} />
@@ -484,7 +484,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const renderRoomManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingRoomId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] border transition-all ${editingRoomId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
             <h3 className="text-xl font-bold text-gray-800 mb-6">{editingRoomId ? 'Update Room Allocation' : 'Resource Management'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField label="Room Number" value={newRoomNumber} onChange={(e: any) => setNewRoomNumber(e.target.value)} placeholder="AB4-601" />
@@ -493,7 +493,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             {errorMsg && activeTab === 'rooms' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
             <div className="mt-8 flex justify-end gap-3">
                 {editingRoomId && <button onClick={resetRoomForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
-                <button onClick={handleSaveRoom} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingRoomId ? 'Update Resource' : 'Add Room'}</button>
+                <button onClick={handleSaveRoom} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors">{editingRoomId ? 'Update Resource' : 'Add Room'}</button>
             </div>
         </div>
         <DataTable items={data.rooms} fields={[{ key: 'roomNumber', label: 'Room' }, { key: 'type', label: 'Type' }]} onEdit={handleEditRoom} onDelete={(id: string) => onUpdateData({ ...data, rooms: data.rooms.filter(r => r.id !== id), schedule: data.schedule.filter(s => s.roomId !== id), lastModified: formatDate(new Date()) })} />
@@ -502,7 +502,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const renderSectionManager = () => (
     <div className="space-y-10 animate-in fade-in duration-500">
-        <div className={`bg-white p-6 md:p-8 rounded-[32px] shadow-sm border transition-all ${editingSectionId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
+        <div className={`bg-white p-6 md:p-8 rounded-[32px] border transition-all ${editingSectionId ? 'border-blue-400 bg-blue-50/10' : 'border-gray-100'}`}>
             <h3 className="text-xl font-bold text-gray-800 mb-6">{editingSectionId ? 'Update Batch Configuration' : 'Student Batching'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <InputField label="Batch (e.g. 56)" value={newSectionBatch} onChange={(e: any) => setNewSectionBatch(e.target.value)} type="number" />
@@ -512,7 +512,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
             {errorMsg && activeTab === 'sections' && <div className="mt-6 p-4 bg-red-50 text-red-700 rounded-xl flex items-center gap-2 text-sm border border-red-100"><AlertCircle className="w-4 h-4" /> {errorMsg}</div>}
             <div className="mt-8 flex justify-end gap-3">
                 {editingSectionId && <button onClick={resetSectionForm} className="px-6 py-3 rounded-full text-gray-500 font-medium hover:bg-gray-100">Cancel</button>}
-                <button onClick={handleSaveSection} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">{editingSectionId ? 'Update Batch' : 'Create Section'}</button>
+                <button onClick={handleSaveSection} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors">{editingSectionId ? 'Update Batch' : 'Create Section'}</button>
             </div>
         </div>
         <DataTable items={data.sections} fields={[{ key: 'batch', label: 'Batch' }, { key: 'name', label: 'Section' }, { key: 'studentCount', label: 'Students' }]} onEdit={handleEditSection} onDelete={(id: string) => onUpdateData({ ...data, sections: data.sections.filter(s => s.id !== id), schedule: data.schedule.filter(s => s.sectionId !== id), lastModified: formatDate(new Date()) })} />
@@ -521,7 +521,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
   const renderSettings = () => (
       <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
-          <div className="bg-white p-6 md:p-8 rounded-[32px] shadow-sm border border-gray-100">
+          <div className="bg-white p-6 md:p-8 rounded-[32px] border border-gray-100">
               <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                   <Settings className="w-6 h-6 text-gray-400" /> Routine Configuration
               </h3>
@@ -549,7 +549,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
 
                   <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                       <p className="text-xs text-gray-400 italic font-medium">Changes apply only after clicking Save.</p>
-                      <button onClick={handleSaveSettings} className="w-full sm:w-auto bg-gray-900 text-white px-10 py-3.5 rounded-full font-bold hover:bg-black transition-colors shadow-xl shadow-gray-200 flex items-center justify-center gap-2">
+                      <button onClick={handleSaveSettings} className="w-full sm:w-auto bg-gray-900 text-white px-10 py-3.5 rounded-full font-bold hover:bg-black transition-colors flex items-center justify-center gap-2">
                           <Save className="w-4 h-4" /> Save Settings
                       </button>
                   </div>
@@ -565,7 +565,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
       {/* Mobile Menu Toggle */}
       <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-gray-100 no-print sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-none">
             <LayoutDashboard className="w-4 h-4" />
           </div>
           <h1 className="text-lg font-bold text-gray-900">Admin</h1>
@@ -586,12 +586,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         />
       )}
 
+      {/* SIDEBAR - Fixed height and sticky on desktop */}
       <aside className={`
-        fixed md:sticky top-0 inset-y-0 left-0 w-72 bg-white z-50 p-6 border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out no-print
+        fixed md:sticky top-0 h-screen w-72 bg-white z-50 p-6 border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out no-print overflow-y-auto
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="flex items-center gap-3 mb-10 pl-2">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
+        <div className="flex items-center gap-3 mb-10 pl-2 shrink-0">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-none">
                 <LayoutDashboard className="w-5 h-5" />
             </div>
             <div>
@@ -609,7 +610,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
           <NavItem id="settings" label="Settings" icon={Settings} activeTab={activeTab} setActiveTab={setActiveTab} setErrorMsg={setErrorMsg} onClose={() => setIsMobileMenuOpen(false)} />
         </nav>
 
-        <div className="mt-8 pt-8 border-t border-gray-100">
+        <div className="mt-8 pt-8 border-t border-gray-100 shrink-0">
             <button 
                 onClick={onLogout} 
                 className="w-full flex items-center gap-3 px-6 py-3 text-sm font-medium text-gray-400 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
@@ -619,7 +620,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ data, onUpdateData, onL
         </div>
       </aside>
 
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto">
+      {/* Independent Scroll Main Context */}
+      <main className="flex-1 p-4 sm:p-6 md:p-10 h-screen overflow-y-auto scroll-smooth">
         <div className="max-w-7xl mx-auto space-y-8 relative">
             {/* Background Accent */}
             <div className="absolute top-0 right-0 w-full h-96 -z-10 opacity-30 pointer-events-none no-print">
